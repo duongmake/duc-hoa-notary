@@ -3,11 +3,11 @@ import { useState } from 'react';
 
 export default function Home() {
   const [code, setCode] = useState('');
-  const [result, setResult] = useState(null);
+  const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const checkStatus = async (e) => {
+const checkStatus = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
