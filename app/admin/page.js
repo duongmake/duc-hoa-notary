@@ -113,7 +113,7 @@ export default function AdminPage() {
     <div className="min-h-screen bg-gray-100 p-4 md:p-6 font-sans">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex justify-between items-center border-b border-gray-300 pb-4">
-          <h1 className="text-2xl font-bold text-gray-800">Quản Lý Tiến Độ Hồ Sơ Công Chunk</h1>
+          <h1 className="text-2xl font-bold text-gray-800">Quản Lý Tiến Độ Hồ Sơ Công Chứng Đức Hòa</h1>
           <span className="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded flex items-center gap-2 shadow-sm">
             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Đồng bộ Real-time
           </span>
@@ -219,7 +219,7 @@ export default function AdminPage() {
                   <th className="px-4 py-4">Phụ Trách</th>
                   <th className="px-4 py-4 w-48">Tiến Độ & Ghi Chú</th>
                   <th className="px-4 py-4 w-28">Thời Gian</th>
-                  <th className="px-4 py-4 text-right w-16">Xử Lý</th>
+                  <th className="px-4 py-4 text-center w-32">Xử Lý</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -268,9 +268,32 @@ export default function AdminPage() {
                       </div>
                     </td>
 
-                    <td className="px-4 py-4 text-right space-x-2">
-                      <button onClick={() => handleEditClick(doc)} className="text-blue-600 hover:text-blue-800 font-bold">Sửa</button>
-                      <button onClick={() => handleDelete(doc.id)} className="text-red-500 hover:text-red-700 font-bold">Xóa</button>
+                    <td className="px-4 py-4 text-right">
+                      <div className="flex items-center justify-center gap-2">
+                        {/* Nút SỬA */}
+                        <button 
+                          onClick={() => handleEditClick(doc)} 
+                          title="Sửa hồ sơ"
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-md text-xs font-semibold transition-all duration-200 border border-blue-200 hover:border-blue-600 shadow-sm"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                          Sửa
+                        </button>
+
+                        {/* Nút XÓA */}
+                        <button 
+                          onClick={() => handleDelete(doc.id)} 
+                          title="Xóa hồ sơ"
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-md text-xs font-semibold transition-all duration-200 border border-red-200 hover:border-red-600 shadow-sm"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                          Xóa
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
