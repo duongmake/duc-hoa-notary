@@ -1,34 +1,42 @@
 'use client';
 import { useState } from 'react';
-import useSWR from 'swr'; // Thêm thư viện SWR
+import useSWR from 'swr';
 
-// Hàm gọi API cơ bản dành cho SWR
 const fetcher = (url) => fetch(url).then((res) => res.json());
 
+const NOTARIES = ['Trần Văn Châu', 'Lê Văn Giúp', 'Trần Thanh Vũ'];
+const DOC_TYPES = ['Mua bán', 'Tặng cho', 'Thuê - mượn', 'Thế chấp', 'Ủy quyền', 'Thừa kế'];
+const DRAFTERS = ['Phạm Tiến Dương', 'Trần Lệ Xuân', 'Trần Hồng Ngọc'];
+const CLERKS = ['Nguyễn Văn Nhanh', 'Trần Văn Khanh', 'Hà Thanh Tùng'];
+const STATUSES = [
+  '1. Tiếp nhận yêu cầu', '2. Soạn thảo', '3. Photo', 
+  '4. Khách ký', '5. Công chứng viên ký', '6. Đóng dấu', '7. Thu phí và trả hồ sơ'
+];
+
 export default function AdminPage() {
-  const [formData, setFormData] = useState({ code: '', customer_name: '', service_type: '', note: '' });
+  const [formData, setFormData] = useState({
+    code: '', notary_public: '', document_name: '', customer_a: '',
+    customer_b: '', content: '', note: '', drafter: '', clerk: ''
+  });
   const [message, setMessage] = useState({ type: '', text: '' });
   const [editingId, setEditingId] = useState(null);
 
-  // --- ÁP DỤNG REAL-TIME BẰNG SWR ---
-  // refreshInterval: 2000 -> Cứ 2 giây sẽ gọi ngầm 1 lần để xem ai đó có sửa gì không
   const { data: responseData, mutate } = useSWR('/api/admin/documents', fetcher, {
     refreshInterval: 2000, 
-    revalidateOnFocus: true, // Khi người dùng tab ra ngoài rồi quay lại, sẽ update ngay lập tức
+    revalidateOnFocus: true,
   });
-
-  // Lấy mảng dữ liệu từ kết quả trả về, nếu chưa có thì để mảng rỗng
   const documents = responseData?.data || [];
+
+  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage({ type: '', text: '' });
 
-    const url = '/api/admin/documents';
     const method = editingId ? 'PUT' : 'POST';
     const payload = editingId ? { ...formData, id: editingId } : formData;
 
-    const res = await fetch(url, {
+    const res = await fetch('/api/admin/documents', {
       method: method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -36,9 +44,8 @@ export default function AdminPage() {
     const data = await res.json();
 
     if (res.ok) {
-      setMessage({ type: 'success', text: editingId ? 'Cập nhật thành công!' : 'Thêm hồ sơ thành công!' });
+      setMessage({ type: 'success', text: editingId ? 'Cập nhật thành công!' : 'Tạo hồ sơ thành công!' });
       handleCancelEdit();
-      // Yêu cầu SWR tải lại dữ liệu mới lập tức
       mutate(); 
     } else {
       setMessage({ type: 'error', text: data.error || 'Có lỗi xảy ra.' });
@@ -47,22 +54,23 @@ export default function AdminPage() {
 
   const handleEditClick = (doc) => {
     setEditingId(doc.id);
-    setFormData({ code: doc.code, customer_name: doc.customer_name, service_type: doc.service_type || '', note: doc.note || '' });
+    setFormData({
+      code: doc.code, notary_public: doc.notary_public || '', document_name: doc.document_name || '',
+      customer_a: doc.customer_a || '', customer_b: doc.customer_b || '', content: doc.content || '',
+      note: doc.note || '', drafter: doc.drafter || '', clerk: doc.clerk || ''
+    });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCancelEdit = () => {
     setEditingId(null);
-    setFormData({ code: '', customer_name: '', service_type: '', note: '' });
+    setFormData({ code: '', notary_public: '', document_name: '', customer_a: '', customer_b: '', content: '', note: '', drafter: '', clerk: '' });
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa hồ sơ này?")) {
-      const res = await fetch(`/api/admin/documents?id=${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        setMessage({ type: 'success', text: 'Đã xóa hồ sơ.' });
-        mutate(); // Cập nhật lại danh sách ngay lập tức
-      }
+    if (window.confirm("Xóa hồ sơ này?")) {
+      await fetch(`/api/admin/documents?id=${id}`, { method: 'DELETE' });
+      mutate();
     }
   };
 
@@ -72,7 +80,7 @@ export default function AdminPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, status: newStatus, note: currentNote }),
     });
-    mutate(); // Cập nhật lại danh sách ngay lập tức
+    mutate();
   };
 
   const handleQuickNoteChange = async (id, currentStatus, newNote) => {
@@ -81,131 +89,176 @@ export default function AdminPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, status: currentStatus, note: newNote }),
     });
-    mutate(); // Đồng bộ ngay với Database
+    mutate();
+  };
+
+  const getStatusColor = (status) => {
+    if(status?.includes('1.')) return 'bg-gray-100 text-gray-700';
+    if(status?.includes('2.')) return 'bg-blue-50 text-blue-700';
+    if(status?.includes('3.')) return 'bg-indigo-50 text-indigo-700';
+    if(status?.includes('4.')) return 'bg-amber-50 text-amber-700';
+    if(status?.includes('5.')) return 'bg-purple-50 text-purple-700';
+    if(status?.includes('6.')) return 'bg-pink-50 text-pink-700';
+    if(status?.includes('7.')) return 'bg-green-100 text-green-800 font-bold';
+    return 'bg-white';
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-6xl mx-auto space-y-6">
-        <div className="flex justify-between items-center border-b pb-4">
-          <h1 className="text-2xl font-bold text-gray-800">Hệ Thống Quản Trị Hồ Sơ</h1>
-          <span className="bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-            Live
+    <div className="min-h-screen bg-gray-100 p-4 md:p-6 font-sans">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="flex justify-between items-center border-b border-gray-300 pb-4">
+          <h1 className="text-2xl font-bold text-gray-800">Quản Lý Tiến Độ Hồ Sơ Công Chứng</h1>
+          <span className="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded flex items-center gap-2 shadow-sm">
+            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Đồng bộ Real-time
           </span>
         </div>
 
         {message.text && (
-          <div className={`p-4 rounded-md text-sm ${message.type === 'success' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'} border`}>
+          <div className={`p-4 rounded-md text-sm font-medium shadow-sm ${message.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
             {message.text}
           </div>
         )}
 
-        {/* FORM NHẬP / SỬA HỒ SƠ */}
-        <div className={`p-6 rounded-lg shadow-sm border ${editingId ? 'bg-yellow-50 border-yellow-200' : 'bg-white border-gray-200'}`}>
-          <h2 className="text-lg font-semibold text-gray-700 mb-4">
-            {editingId ? 'Sửa Thông Tin Hồ Sơ' : 'Tiếp Nhận Hồ Sơ Mới'}
+        {/* BẢNG NHẬP LIỆU */}
+        <div className={`p-6 rounded-xl shadow-sm border ${editingId ? 'bg-yellow-50 border-yellow-300' : 'bg-white border-gray-200'}`}>
+          <h2 className="text-lg font-bold text-gray-700 mb-5">
+            {editingId ? '✏️ Cập Nhật Thông Tin Hồ Sơ' : '📄 Khởi Tạo Hồ Sơ Mới'}
           </h2>
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Mã Hồ Sơ</label>
-              <input
-                type="text" required placeholder="VD: CC-2026-001"
-                value={formData.code} 
-                onChange={e => setFormData({...formData, code: e.target.value})}
-                disabled={editingId !== null} 
-                className={`w-full border border-gray-300 rounded px-3 py-2 text-sm ${editingId ? 'bg-gray-100 cursor-not-allowed' : 'focus:ring-blue-500'}`}
-              />
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {/* Cột 1 */}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1 uppercase">Loại Hồ Sơ</label>
+                <select name="document_name" value={formData.document_name} onChange={handleChange} className="w-full border border-gray-300 rounded p-2 text-sm bg-white">
+                  <option value="">-- Chọn loại --</option>
+                  {DOC_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1 uppercase">Công Chứng Viên</label>
+                <select name="notary_public" value={formData.notary_public} onChange={handleChange} className="w-full border border-gray-300 rounded p-2 text-sm bg-white">
+                  <option value="">-- Chọn CCV --</option>
+                  {NOTARIES.map(n => <option key={n} value={n}>{n}</option>)}
+                </select>
+              </div>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Tên Khách Hàng</label>
-              <input
-                type="text" required placeholder="Nguyễn Văn A"
-                value={formData.customer_name} onChange={e => setFormData({...formData, customer_name: e.target.value})}
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-              />
+
+            {/* Cột 2 */}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1 uppercase">Khách Hàng A</label>
+                <input name="customer_a" type="text" placeholder="Bên Bán / Bên Tặng Cho..." value={formData.customer_a} onChange={handleChange} className="w-full border border-gray-300 rounded p-2 text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1 uppercase">Khách Hàng B</label>
+                <input name="customer_b" type="text" placeholder="Bên Mua / Bên Nhận..." value={formData.customer_b} onChange={handleChange} className="w-full border border-gray-300 rounded p-2 text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1 uppercase">Tóm tắt nội dung</label>
+                <input name="content" type="text" placeholder="Thửa đất số..." value={formData.content} onChange={handleChange} className="w-full border border-gray-300 rounded p-2 text-sm" />
+              </div>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Loại Việc</label>
-              <input
-                type="text" placeholder="VD: Sang tên xe"
-                value={formData.service_type} onChange={e => setFormData({...formData, service_type: e.target.value})}
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-              />
+
+            {/* Cột 3 */}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1 uppercase">NV Soạn Thảo</label>
+                <select name="drafter" value={formData.drafter} onChange={handleChange} className="w-full border border-gray-300 rounded p-2 text-sm bg-white">
+                  <option value="">-- Chọn NV --</option>
+                  {DRAFTERS.map(d => <option key={d} value={d}>{d}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1 uppercase">NV Photo & Trình Ký</label>
+                <select name="clerk" value={formData.clerk} onChange={handleChange} className="w-full border border-gray-300 rounded p-2 text-sm bg-white">
+                  <option value="">-- Chọn NV --</option>
+                  {CLERKS.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1 uppercase">Ghi chú</label>
+                <input name="note" type="text" placeholder="Lưu ý thêm..." value={formData.note} onChange={handleChange} className="w-full border border-gray-300 rounded p-2 text-sm" />
+              </div>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Ghi chú ban đầu</label>
-              <input
-                type="text" placeholder="VD: Chờ đối chiếu CCCD"
-                value={formData.note} onChange={e => setFormData({...formData, note: e.target.value})}
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-              />
-            </div>
-            <div className="md:col-span-4 flex justify-end gap-2 mt-2">
+
+            <div className="md:col-span-3 flex justify-end gap-3 mt-4 pt-4 border-t">
               {editingId && (
-                <button type="button" onClick={handleCancelEdit} className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium px-4 py-2 rounded text-sm transition">
+                <button type="button" onClick={handleCancelEdit} className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold px-6 py-2 rounded-md text-sm transition">
                   Hủy Sửa
                 </button>
               )}
-              <button type="submit" className={`${editingId ? 'bg-amber-500 hover:bg-amber-600' : 'bg-blue-600 hover:bg-blue-700'} text-white font-medium px-6 py-2 rounded text-sm transition`}>
-                {editingId ? 'Lưu Cập Nhật' : 'Tạo Hồ Sơ'}
+              <button type="submit" className={`${editingId ? 'bg-amber-500 hover:bg-amber-600' : 'bg-blue-600 hover:bg-blue-700'} text-white font-bold px-8 py-2 rounded-md text-sm transition shadow-sm`}>
+                {editingId ? 'LƯU CẬP NHẬT' : '🚀 TẠO HỒ SƠ'}
               </button>
             </div>
           </form>
         </div>
 
-        {/* BẢNG DANH SÁCH */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        {/* BẢNG THEO DÕI */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left text-gray-500">
-              <thead className="text-xs text-gray-700 uppercase bg-gray-100 border-b">
+            <table className="w-full text-sm text-left align-top">
+              <thead className="text-xs text-gray-600 uppercase bg-gray-100 border-b">
                 <tr>
-                  <th className="px-4 py-3">Mã HS</th>
-                  <th className="px-4 py-3">Khách Hàng / Loại Việc</th>
-                  <th className="px-4 py-3">Ghi chú (Sửa nhanh)</th>
-                  <th className="px-4 py-3">Trạng Thái</th>
-                  <th className="px-4 py-3 text-right">Thao tác</th>
+                  <th className="px-4 py-4 w-24">Mã HS</th>
+                  <th className="px-4 py-4">Khách Hàng / Nội Dung</th>
+                  <th className="px-4 py-4">Phụ Trách</th>
+                  <th className="px-4 py-4 w-48">Tiến Độ & Ghi Chú</th>
+                  {/* THÊM CỘT THỜI GIAN VÀO ĐÂY */}
+                  <th className="px-4 py-4 w-28">Thời Gian</th>
+                  <th className="px-4 py-4 text-right w-16">Xử Lý</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-gray-100">
                 {!responseData ? (
-                  <tr><td colSpan="5" className="text-center py-8">Đang tải dữ liệu ngầm...</td></tr>
+                  <tr><td colSpan="6" className="text-center py-8">Đang đồng bộ...</td></tr>
                 ) : documents.map((doc) => (
-                  <tr key={doc.id} className="border-b hover:bg-gray-50">
-                    <td className="px-4 py-3 font-bold text-gray-900">{doc.code}</td>
-                    <td className="px-4 py-3">
-                      <div className="font-medium text-gray-800">{doc.customer_name}</div>
-                      <div className="text-xs text-gray-400">{doc.service_type || '-'}</div>
+                  <tr key={doc.id} className="hover:bg-blue-50/50 transition">
+                    <td className="px-4 py-4 font-black text-gray-800">{doc.code}</td>
+                    
+                    <td className="px-4 py-4">
+                      <div className="font-bold text-gray-800 text-base">{doc.document_name || 'Chưa phân loại'}</div>
+                      <div className="text-gray-600 mt-1"><span className="font-semibold text-gray-500">A:</span> {doc.customer_a || '-'}</div>
+                      <div className="text-gray-600"><span className="font-semibold text-gray-500">B:</span> {doc.customer_b || '-'}</div>
+                      {doc.content && <div className="text-xs text-gray-400 mt-1 italic">"{doc.content}"</div>}
                     </td>
-                    <td className="px-4 py-3">
-                      <input 
-                        type="text"
-                        defaultValue={doc.note || ''}
-                        onBlur={(e) => {
-                          if (e.target.value !== doc.note) {
-                            handleQuickNoteChange(doc.id, doc.status, e.target.value);
-                          }
-                        }}
-                        className="bg-transparent border border-transparent hover:border-gray-300 focus:bg-white focus:border-blue-500 rounded px-2 py-1 w-full text-sm transition"
-                        placeholder="Nhập ghi chú..."
-                      />
+
+                    <td className="px-4 py-4 text-xs space-y-1">
+                      <div><span className="font-semibold text-gray-500">CCV:</span> {doc.notary_public || '-'}</div>
+                      <div><span className="font-semibold text-gray-500">Soạn:</span> {doc.drafter || '-'}</div>
+                      <div><span className="font-semibold text-gray-500">Ký:</span> {doc.clerk || '-'}</div>
                     </td>
-                    <td className="px-4 py-3">
+
+                    <td className="px-4 py-4">
                       <select
                         value={doc.status}
                         onChange={(e) => handleQuickStatusChange(doc.id, doc.note, e.target.value)}
-                        className="border rounded px-2 py-1 font-medium text-xs bg-white focus:ring-1 focus:ring-blue-500"
+                        className={`w-full border rounded p-1 mb-2 font-semibold text-xs focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer ${getStatusColor(doc.status)}`}
                       >
-                        <option value="Đang xử lý">Đang xử lý</option>
-                        <option value="Chờ bổ sung giấy tờ">Chờ bổ sung giấy tờ</option>
-                        <option value="Chờ ký duyệt">Chờ ký duyệt</option>
-                        <option value="Đã hoàn thành">Đã hoàn thành</option>
-                        <option value="Đã hủy">Đã hủy</option>
+                        {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
                       </select>
+                      <input 
+                        type="text"
+                        defaultValue={doc.note || ''}
+                        onBlur={(e) => { if (e.target.value !== doc.note) handleQuickNoteChange(doc.id, doc.status, e.target.value); }}
+                        className="w-full bg-gray-50 border border-gray-200 hover:border-gray-300 focus:bg-white focus:border-blue-500 rounded px-2 py-1.5 text-xs transition"
+                        placeholder="Thêm ghi chú..."
+                      />
                     </td>
-                    <td className="px-4 py-3 text-right space-x-2">
-                      <button onClick={() => handleEditClick(doc)} className="text-blue-600 hover:underline text-xs font-medium">Sửa</button>
-                      <button onClick={() => handleDelete(doc.id)} className="text-red-600 hover:underline text-xs font-medium">Xóa</button>
+
+                    {/* HIỂN THỊ THỜI GIAN CẬP NHẬT Ở ĐÂY */}
+                    <td className="px-4 py-4 text-xs text-gray-500">
+                      <div className="font-bold text-gray-700">
+                        {new Date(doc.updated_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                      <div>
+                        {new Date(doc.updated_at).toLocaleDateString('vi-VN')}
+                      </div>
+                    </td>
+
+                    <td className="px-4 py-4 text-right space-x-2">
+                      <button onClick={() => handleEditClick(doc)} className="text-blue-600 hover:text-blue-800 font-bold">Sửa</button>
+                      <button onClick={() => handleDelete(doc.id)} className="text-red-500 hover:text-red-700 font-bold">Xóa</button>
                     </td>
                   </tr>
                 ))}
