@@ -16,7 +16,8 @@ const STATUSES = [
 export default function AdminPage() {
   const [formData, setFormData] = useState({
     code: '', notary_public: '', document_name: '', customer_a: '',
-    customer_b: '', content: '', note: '', drafter: '', clerk: ''
+    customer_b: '', content: '', note: '', drafter: '', clerk: '',
+    status: '1. Tiếp nhận yêu cầu' // Giá trị mặc định khi tạo mới
   });
   const [message, setMessage] = useState({ type: '', text: '' });
   const [editingId, setEditingId] = useState(null);
@@ -57,14 +58,19 @@ export default function AdminPage() {
     setFormData({
       code: doc.code, notary_public: doc.notary_public || '', document_name: doc.document_name || '',
       customer_a: doc.customer_a || '', customer_b: doc.customer_b || '', content: doc.content || '',
-      note: doc.note || '', drafter: doc.drafter || '', clerk: doc.clerk || ''
+      note: doc.note || '', drafter: doc.drafter || '', clerk: doc.clerk || '',
+      status: doc.status || '1. Tiếp nhận yêu cầu' // Đưa trạng thái cũ lên form khi nhấn sửa
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCancelEdit = () => {
     setEditingId(null);
-    setFormData({ code: '', notary_public: '', document_name: '', customer_a: '', customer_b: '', content: '', note: '', drafter: '', clerk: '' });
+    setFormData({ 
+      code: '', notary_public: '', document_name: '', customer_a: '', 
+      customer_b: '', content: '', note: '', drafter: '', clerk: '', 
+      status: '1. Tiếp nhận yêu cầu' 
+    });
   };
 
   const handleDelete = async (id) => {
@@ -107,7 +113,7 @@ export default function AdminPage() {
     <div className="min-h-screen bg-gray-100 p-4 md:p-6 font-sans">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex justify-between items-center border-b border-gray-300 pb-4">
-          <h1 className="text-2xl font-bold text-gray-800">Quản Lý Tiến Độ Hồ Sơ Công Chứng</h1>
+          <h1 className="text-2xl font-bold text-gray-800">Quản Lý Tiến Độ Hồ Sơ Công Chunk</h1>
           <span className="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded flex items-center gap-2 shadow-sm">
             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Đồng bộ Real-time
           </span>
@@ -125,6 +131,7 @@ export default function AdminPage() {
             {editingId ? '✏️ Cập Nhật Thông Tin Hồ Sơ' : '📄 Khởi Tạo Hồ Sơ Mới'}
           </h2>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            
             {/* Cột 1 */}
             <div className="space-y-4">
               <div>
@@ -139,6 +146,13 @@ export default function AdminPage() {
                 <select name="notary_public" value={formData.notary_public} onChange={handleChange} className="w-full border border-gray-300 rounded p-2 text-sm bg-white">
                   <option value="">-- Chọn CCV --</option>
                   {NOTARIES.map(n => <option key={n} value={n}>{n}</option>)}
+                </select>
+              </div>
+              {/* ĐÃ BỔ SUNG Ô CHỌN TRẠNG THÁI VÀO FORM */}
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1 uppercase">Trạng Thái Hồ Sơ</label>
+                <select name="status" value={formData.status} onChange={handleChange} className="w-full border border-gray-300 rounded p-2 text-sm bg-white font-semibold text-gray-700">
+                  {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
             </div>
@@ -204,7 +218,6 @@ export default function AdminPage() {
                   <th className="px-4 py-4">Khách Hàng / Nội Dung</th>
                   <th className="px-4 py-4">Phụ Trách</th>
                   <th className="px-4 py-4 w-48">Tiến Độ & Ghi Chú</th>
-                  {/* THÊM CỘT THỜI GIAN VÀO ĐÂY */}
                   <th className="px-4 py-4 w-28">Thời Gian</th>
                   <th className="px-4 py-4 text-right w-16">Xử Lý</th>
                 </tr>
@@ -246,7 +259,6 @@ export default function AdminPage() {
                       />
                     </td>
 
-                    {/* HIỂN THỊ THỜI GIAN CẬP NHẬT Ở ĐÂY */}
                     <td className="px-4 py-4 text-xs text-gray-500">
                       <div className="font-bold text-gray-700">
                         {new Date(doc.updated_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}

@@ -20,38 +20,32 @@ export async function GET() {
 
 export async function POST(request) {
   try {
-    // Không nhận 'code' từ giao diện nữa, vì chúng ta sẽ tự tạo
-    const { notary_public, document_name, customer_a, customer_b, content, note, drafter, clerk } = await request.json();
+    const { notary_public, document_name, customer_a, customer_b, content, note, drafter, clerk, status } = await request.json();
     
-    // 1. TÌM MÃ HỒ SƠ LỚN NHẤT HIỆN TẠI
     const { rows } = await sql`
       SELECT code FROM documents 
       WHERE code LIKE 'HS-%' 
       ORDER BY id DESC LIMIT 1
     `;
 
-    let nextCode = 'HS-01'; // Mặc định nếu chưa có hồ sơ nào
+    let nextCode = 'HS-01';
 
     if (rows.length > 0) {
-      const lastCode = rows[0].code; // Ví dụ: "HS-09"
-      // Cắt bỏ chữ "HS-", lấy phần số và chuyển thành số nguyên (integer)
+      const lastCode = rows[0].code; 
       const lastNumber = parseInt(lastCode.replace('HS-', ''), 10);
-      
       if (!isNaN(lastNumber)) {
         const newNumber = lastNumber + 1;
-        // Format lại thành số có 2 chữ số (nếu số < 10 sẽ tự thêm số 0 ở đầu)
         nextCode = `HS-${newNumber.toString().padStart(2, '0')}`;
       }
     }
 
-    // 2. LƯU VÀO DATABASE VỚI MÃ VỪA TẠO
     await sql`
       INSERT INTO documents (
         code, notary_public, document_name, customer_a, customer_b, 
         content, note, drafter, clerk, status, updated_at
       ) VALUES (
         ${nextCode}, ${notary_public}, ${document_name}, ${customer_a}, ${customer_b}, 
-        ${content}, ${note}, ${drafter}, ${clerk}, '1. Tiếp nhận yêu cầu', NOW()
+        ${content}, ${note}, ${drafter}, ${clerk}, ${status || '1. Tiếp nhận yêu cầu'}, NOW()
       )
     `;
     return NextResponse.json({ success: true, message: "Tạo hồ sơ thành công!", code: nextCode });
@@ -66,6 +60,7 @@ export async function PUT(request) {
     const data = await request.json();
     const { id, status, note, customer_a } = data;
 
+    // Nếu sửa từ Form (có trường customer_a)
     if (customer_a) {
       const { notary_public, document_name, customer_b, content, drafter, clerk } = data;
       await sql`
@@ -73,10 +68,12 @@ export async function PUT(request) {
         SET notary_public = ${notary_public}, document_name = ${document_name}, 
             customer_a = ${customer_a}, customer_b = ${customer_b}, 
             content = ${content}, note = ${note}, drafter = ${drafter}, clerk = ${clerk}, 
+            status = ${status}, 
             updated_at = NOW() 
         WHERE id = ${id}
       `;
     } else {
+      // Nếu sửa nhanh Trạng thái / Ghi chú từ bảng
       await sql`
         UPDATE documents 
         SET status = ${status}, note = ${note}, updated_at = NOW() 
