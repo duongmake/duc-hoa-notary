@@ -7,12 +7,13 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function PersonalReportPage() {
   const { data: responseData } = useSWR('/api/admin/documents', fetcher, {
-    refreshInterval: 3000, // Tự động làm mới mỗi 3 giây
+    refreshInterval: 3000, 
   });
 
   const documents = responseData?.data || [];
+  const [isExporting, setIsExporting] = useState(false);
 
-  // Hàm định dạng ngày giờ hiển thị đầy đủ, sắc nét
+  // Hàm định dạng ngày giờ hiển thị trên giao diện web
   const formatDateTime = (dateTimeString: string | null) => {
     if (!dateTimeString) return <span className="text-gray-400 italic">Chưa ghi nhận</span>;
     const d = new Date(dateTimeString);
@@ -24,6 +25,58 @@ export default function PersonalReportPage() {
         {d.toLocaleDateString('vi-VN')}
       </div>
     );
+  };
+
+  // CHỨC NĂNG XUẤT FILE EXCEL (.XLSX)
+  const handleExportExcel = async () => {
+    if (documents.length === 0) {
+      alert("Chưa có dữ liệu để xuất file!");
+      return;
+    }
+    
+    setIsExporting(true);
+    try {
+      // Tải thư viện xlsx động để tối ưu hóa dung lượng trang
+      const XLSX = await import('xlsx');
+
+      // Định dạng và làm sạch dữ liệu trước khi nạp vào Excel
+      const excelData = documents.map((doc: any) => ({
+        'MÃ HỒ SƠ': doc.code,
+        'LOẠI HỒ SƠ': doc.document_name || 'Chưa phân loại',
+        'KHÁCH HÀNG A (BÊN BÁN/TẶNG)': doc.customer_a || '-',
+        'KHÁCH HÀNG B (BÊN MUA/NHẬN)': doc.customer_b || '-',
+        'NỘI DUNG TÓM TẮT': doc.content || '-',
+        'CÔNG CHỨNG VIÊN': doc.notary_public || '-',
+        'NHÂN VIÊN SOẠN THẢO': doc.drafter || '-',
+        'NHÂN VIÊN PHOTO/TRÌNH KÝ': doc.clerk || '-',
+        'TIẾN ĐỘ HIỆN TẠI': doc.status,
+        'GHI CHÚ VĂN PHÒNG': doc.note || '-',
+        'THỜI GIAN TIẾP NHẬN': doc.created_at ? new Date(doc.created_at).toLocaleString('vi-VN') : 'Chưa ghi nhận',
+        'CẬP NHẬT CUỐI CÙNG': doc.updated_at ? new Date(doc.updated_at).toLocaleString('vi-VN') : 'Chưa ghi nhận',
+        'THỜI GIAN HOÀN THÀNH': doc.completed_at ? new Date(doc.completed_at).toLocaleString('vi-VN') : 'Chưa hoàn thành',
+      }));
+
+      // Khởi tạo Worksheet và Workbook mới
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Danh Sách Hồ Sơ');
+
+      // Cấu hình độ rộng tối thiểu cho các cột trong Excel để không bị che chữ (22 ký tự)
+      const columnWidths = Object.keys(excelData[0] || {}).map(() => ({ wch: 22 }));
+      worksheet['!cols'] = columnWidths;
+
+      // Đặt tên file kèm theo ngày xuất bản hiện tại
+      const today = new Date().toISOString().slice(0, 10);
+      const fileName = `Bao_Cao_Tien_Do_VPCC_Duc_Hoa_${today}.xlsx`;
+
+      // Tiến hành tải file xuống máy tính
+      XLSX.writeFile(workbook, fileName);
+    } catch (error) {
+      console.error("Lỗi xuất file Excel:", error);
+      alert("Có lỗi xảy ra trong quá trình xuất dữ liệu ra Excel.");
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -46,12 +99,26 @@ export default function PersonalReportPage() {
               Trang tra cứu nội bộ hiển thị tất cả thuộc tính ẩn dưới Cơ sở dữ liệu
             </p>
           </div>
-          <Link 
-            href="/admin" 
-            className="text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg border transition-all"
-          >
-            ← Quay lại trang Admin
-          </Link>
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+            {/* ĐÃ BỔ SUNG: NÚT XUẤT EXCEL CHUYÊN NGHIỆP */}
+            <button
+              onClick={handleExportExcel}
+              disabled={isExporting}
+              className="flex items-center gap-2 text-xs font-bold text-white bg-green-600 hover:bg-green-700 disabled:bg-green-300 px-4 py-2 rounded-lg shadow-sm border border-green-700 transition-all cursor-pointer"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              {isExporting ? 'Đang tạo file...' : 'Tải File Excel (.xlsx)'}
+            </button>
+
+            <Link 
+              href="/admin" 
+              className="text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg border border-gray-300 transition-all"
+            >
+              ← Quay lại trang Admin
+            </Link>
+          </div>
         </div>
 
         {/* THỐNG KÊ SƠ BỘ */}
@@ -100,13 +167,10 @@ export default function PersonalReportPage() {
                 ) : (
                   documents.map((doc: any) => (
                     <tr key={doc.id} className="hover:bg-gray-50/80 transition-all align-top">
-                      
-                      {/* Mã HS */}
                       <td className="px-4 py-4 text-center font-black text-gray-900 text-base">
                         {doc.code}
                       </td>
 
-                      {/* Khách hàng A & B */}
                       <td className="px-4 py-4 space-y-1">
                         <div className="flex items-start text-xs">
                           <span className="font-bold text-gray-400 w-5 shrink-0">A:</span>
@@ -118,7 +182,6 @@ export default function PersonalReportPage() {
                         </div>
                       </td>
 
-                      {/* Tên việc & Tóm tắt nội dung */}
                       <td className="px-4 py-4 space-y-1">
                         <span className="inline-block bg-blue-50 text-blue-800 text-xs font-bold px-2 py-0.5 rounded border border-blue-100">
                           {doc.document_name || 'Chưa phân loại'}
@@ -130,14 +193,12 @@ export default function PersonalReportPage() {
                         )}
                       </td>
 
-                      {/* Nhân sự phụ trách */}
                       <td className="px-4 py-4 text-xs space-y-1">
                         <div><span className="font-bold text-gray-400">CCV:</span> <span className="font-semibold text-blue-700">{doc.notary_public || '-'}</span></div>
                         <div><span className="font-bold text-gray-400">Soạn:</span> <span className="font-medium text-gray-800">{doc.drafter || '-'}</span></div>
                         <div><span className="font-bold text-gray-400">Trình:</span> <span className="font-medium text-gray-800">{doc.clerk || '-'}</span></div>
                       </td>
 
-                      {/* Tiến độ và Ghi chú */}
                       <td className="px-4 py-4 space-y-1.5">
                         <span className={`inline-block text-xs font-bold px-2.5 py-1 rounded-md border ${getStatusBadge(doc.status)}`}>
                           {doc.status}
@@ -149,21 +210,17 @@ export default function PersonalReportPage() {
                         )}
                       </td>
 
-                      {/* MỐC THỜI GIAN KHỞI TẠO HỒ SƠ */}
                       <td className="px-4 py-4 bg-gray-50/30">
                         {formatDateTime(doc.created_at)}
                       </td>
 
-                      {/* MỐC THỜI GIAN CẬP NHẬT GẦN NHẤT */}
                       <td className="px-4 py-4">
                         {formatDateTime(doc.updated_at)}
                       </td>
 
-                      {/* MỐC THỜI GIAN HOÀN THÀNH (TRẠNG THÁI 8) */}
                       <td className="px-4 py-4 bg-green-50/10">
                         {formatDateTime(doc.completed_at)}
                       </td>
-
                     </tr>
                   ))
                 )}
