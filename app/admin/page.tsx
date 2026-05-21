@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import useSWR from 'swr';
 
-const fetcher = (url) => fetch(url).then((res) => res.json());
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 const NOTARIES = ['Trần Văn Châu', 'Lê Văn Giúp', 'Trần Thanh Vũ'];
 const DOC_TYPES = ['Mua bán', 'Tặng cho', 'Thuê - mượn', 'Thế chấp', 'Ủy quyền', 'Thừa kế'];
@@ -17,10 +17,10 @@ export default function AdminPage() {
   const [formData, setFormData] = useState({
     code: '', notary_public: '', document_name: '', customer_a: '',
     customer_b: '', content: '', note: '', drafter: '', clerk: '',
-    status: '1. Tiếp nhận yêu cầu' // Giá trị mặc định khi tạo mới
+    status: '1. Tiếp nhận yêu cầu' 
   });
   const [message, setMessage] = useState({ type: '', text: '' });
-  const [editingId, setEditingId] = useState<any>(null);
+  const [editingId, setEditingId] = useState<any>(null); // Đã sửa thành <any>
 
   const { data: responseData, mutate } = useSWR('/api/admin/documents', fetcher, {
     refreshInterval: 2000, 
@@ -28,9 +28,9 @@ export default function AdminPage() {
   });
   const documents = responseData?.data || [];
 
-  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (e: any) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: any) => {
     e.preventDefault();
     setMessage({ type: '', text: '' });
 
@@ -53,13 +53,13 @@ export default function AdminPage() {
     }
   };
 
-  const handleEditClick = (doc) => {
+  const handleEditClick = (doc: any) => {
     setEditingId(doc.id);
     setFormData({
       code: doc.code, notary_public: doc.notary_public || '', document_name: doc.document_name || '',
       customer_a: doc.customer_a || '', customer_b: doc.customer_b || '', content: doc.content || '',
       note: doc.note || '', drafter: doc.drafter || '', clerk: doc.clerk || '',
-      status: doc.status || '1. Tiếp nhận yêu cầu' // Đưa trạng thái cũ lên form khi nhấn sửa
+      status: doc.status || '1. Tiếp nhận yêu cầu' 
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -73,14 +73,14 @@ export default function AdminPage() {
     });
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id: any) => {
     if (window.confirm("Xóa hồ sơ này?")) {
       await fetch(`/api/admin/documents?id=${id}`, { method: 'DELETE' });
       mutate();
     }
   };
 
-  const handleQuickStatusChange = async (id, currentNote, newStatus) => {
+  const handleQuickStatusChange = async (id: any, currentNote: any, newStatus: any) => {
     await fetch('/api/admin/documents', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -89,7 +89,7 @@ export default function AdminPage() {
     mutate();
   };
 
-  const handleQuickNoteChange = async (id, currentStatus, newNote) => {
+  const handleQuickNoteChange = async (id: any, currentStatus: any, newNote: any) => {
     await fetch('/api/admin/documents', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -98,7 +98,7 @@ export default function AdminPage() {
     mutate();
   };
 
-  const getStatusColor = (status) => {
+  const getStatusColor = (status: any) => {
     if(status?.includes('1.')) return 'bg-gray-100 text-gray-700';
     if(status?.includes('2.')) return 'bg-blue-50 text-blue-700';
     if(status?.includes('3.')) return 'bg-indigo-50 text-indigo-700';
@@ -113,7 +113,7 @@ export default function AdminPage() {
     <div className="min-h-screen bg-gray-100 p-4 md:p-6 font-sans">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex justify-between items-center border-b border-gray-300 pb-4">
-          <h1 className="text-2xl font-bold text-gray-800">Quản Lý Tiến Độ Hồ Sơ Công Chứng Đức Hòa</h1>
+          <h1 className="text-2xl font-bold text-gray-800">Quản Lý Tiến Độ Hồ Sơ Công Chứng</h1>
           <span className="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded flex items-center gap-2 shadow-sm">
             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Đồng bộ Real-time
           </span>
@@ -148,7 +148,6 @@ export default function AdminPage() {
                   {NOTARIES.map(n => <option key={n} value={n}>{n}</option>)}
                 </select>
               </div>
-              {/* ĐÃ BỔ SUNG Ô CHỌN TRẠNG THÁI VÀO FORM */}
               <div>
                 <label className="block text-xs font-bold text-gray-600 mb-1 uppercase">Trạng Thái Hồ Sơ</label>
                 <select name="status" value={formData.status} onChange={handleChange} className="w-full border border-gray-300 rounded p-2 text-sm bg-white font-semibold text-gray-700">
@@ -224,8 +223,8 @@ export default function AdminPage() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {!responseData ? (
-                  <tr><td colSpan="6" className="text-center py-8">Đang đồng bộ...</td></tr>
-                ) : documents.map((doc) => (
+                  <tr><td colSpan={6} className="text-center py-8">Đang đồng bộ...</td></tr>
+                ) : documents.map((doc: any) => (
                   <tr key={doc.id} className="hover:bg-blue-50/50 transition">
                     <td className="px-4 py-4 font-black text-gray-800">{doc.code}</td>
                     
