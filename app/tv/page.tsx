@@ -33,8 +33,9 @@ export default function TVDisplayPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans flex flex-col">
-      {/* HEADER GỌN GÀNG */}
+    // Đã ép cứng nền trắng (bg-white) và chữ đen (text-gray-900)
+    <div className="min-h-screen bg-white text-gray-900 font-sans flex flex-col">
+      {/* HEADER */}
       <div className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center shadow-sm">
         <div className="flex items-center gap-3">
           <div className="bg-blue-700 text-white px-3 py-1 rounded font-black text-xl">VPCC</div>
@@ -59,12 +60,11 @@ export default function TVDisplayPage() {
       {/* NỘI DUNG BẢNG */}
       <div className="p-6 flex-1 flex flex-col">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex-1">
-          <table className="w-full text-sm text-left border-collapse">
-            <thead className="text-xs text-gray-500 uppercase bg-gray-100 border-b">
+          <table className="w-full text-sm text-left border-collapse bg-white">
+            <thead className="text-xs text-gray-600 uppercase bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-6 py-4 w-28">Mã HS</th>
                 <th className="px-6 py-4">Khách Hàng / Nội Dung</th>
-                {/* ĐÃ THÊM CỘT PHỤ TRÁCH VÀO ĐÂY */}
                 <th className="px-6 py-4 w-48">Phụ Trách</th>
                 <th className="px-6 py-4 w-64 text-center">Tiến Độ Hiện Tại</th>
                 <th className="px-6 py-4 w-32 text-right">Thời Gian</th>
@@ -74,7 +74,7 @@ export default function TVDisplayPage() {
               {!responseData ? (
                 <tr><td colSpan={5} className="text-center py-20 text-gray-400">Đang tải dữ liệu...</td></tr>
               ) : documents.map((doc: any) => (
-                <tr key={doc.id} className="hover:bg-blue-50/30 transition">
+                <tr key={doc.id} className="hover:bg-blue-50/50 transition bg-white">
                   {/* Mã HS */}
                   <td className="px-6 py-5 font-black text-gray-900 text-lg align-top">
                     {doc.code}
@@ -95,7 +95,7 @@ export default function TVDisplayPage() {
                     </div>
                   </td>
 
-                  {/* THÔNG TIN PHỤ TRÁCH (Giống hệt trang Admin) */}
+                  {/* THÔNG TIN PHỤ TRÁCH */}
                   <td className="px-6 py-5 space-y-2 align-top">
                     <div className="flex items-center text-sm">
                       <span className="font-bold text-gray-400 w-12">CCV:</span> 
@@ -117,7 +117,7 @@ export default function TVDisplayPage() {
                         {doc.status}
                     </div>
                     {doc.note && (
-                        <div className="text-xs text-gray-400 mt-2 italic text-center">
+                        <div className="text-xs text-gray-500 mt-2 italic text-center">
                             "{doc.note}"
                         </div>
                     )}
@@ -128,7 +128,7 @@ export default function TVDisplayPage() {
                     <div className="text-lg font-black text-gray-800">
                       {new Date(doc.updated_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                     </div>
-                    <div className="text-xs text-gray-400">
+                    <div className="text-xs text-gray-500">
                         {new Date(doc.updated_at).toLocaleDateString('vi-VN')}
                     </div>
                   </td>
@@ -139,7 +139,7 @@ export default function TVDisplayPage() {
         </div>
         
         {/* FOOTER */}
-        <div className="mt-4 flex justify-between items-center text-gray-400 text-xs font-medium px-2">
+        <div className="mt-4 flex justify-between items-center text-gray-500 text-xs font-medium px-2">
             <div>© Văn Phòng Công Chứng Đức Hòa - Hệ thống theo dõi hồ sơ tự động</div>
             <div>Vui lòng liên hệ quầy thu phí nếu hồ sơ của quý khách đã ở trạng thái số 7</div>
         </div>
