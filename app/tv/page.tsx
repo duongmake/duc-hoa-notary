@@ -26,12 +26,15 @@ export default function TVDisplayPage() {
 
   const { data: responseData } = useSWR('/api/admin/documents', fetcher, {
     refreshInterval: 2000, 
-    refreshWhenHidden: true, // Bắt buộc chạy lấy dữ liệu kể cả khi Tivi cho tab ngủ ngầm
-    refreshWhenOffline: true, // Bắt buộc chạy kể cả khi mạng Tivi bị chập chờn
-    revalidateOnFocus: false, // Không phụ thuộc vào việc người dùng có thao tác (focus) hay không
+    refreshWhenHidden: true,
+    refreshWhenOffline: true,
+    revalidateOnFocus: false,
   });
 
-  const documents = responseData?.data || [];
+  const rawDocuments = responseData?.data || [];
+  
+  // BỘ LỌC: Chỉ giữ lại các hồ sơ KHÔNG chứa trạng thái '8.'
+  const documents = rawDocuments.filter((doc: any) => !doc.status?.includes('8.'));
 
   // HIỆU ỨNG TỰ ĐỘNG TRƯỢT LÊN / TRƯỢT XUỐNG
   useEffect(() => {

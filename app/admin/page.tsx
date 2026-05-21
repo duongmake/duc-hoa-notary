@@ -10,7 +10,7 @@ const DRAFTERS = ['Phạm Tiến Dương', 'Trần Lệ Xuân', 'Trần Hồng N
 const CLERKS = ['Nguyễn Văn Nhanh', 'Trần Văn Khanh', 'Hà Thanh Tùng'];
 const STATUSES = [
   '1. Tiếp nhận yêu cầu', '2. Soạn thảo', '3. Photo', 
-  '4. Khách ký', '5. Công chứng viên ký', '6. Đóng dấu', '7. Thu phí và trả hồ sơ'
+  '4. Khách ký', '5. Công chứng viên ký', '6. Đóng dấu', '7. Thu phí và trả hồ sơ', '8. Hoàn thành'
 ];
 
 export default function AdminPage() {
@@ -106,6 +106,7 @@ export default function AdminPage() {
     if(status?.includes('5.')) return 'bg-purple-50 text-purple-700';
     if(status?.includes('6.')) return 'bg-pink-50 text-pink-700';
     if(status?.includes('7.')) return 'bg-green-100 text-green-800 font-bold';
+    if(status?.includes('8.')) return 'bg-gray-300 text-gray-600 font-bold';
     return 'bg-white';
   };
 

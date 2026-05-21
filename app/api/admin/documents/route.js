@@ -42,10 +42,10 @@ export async function POST(request) {
     await sql`
       INSERT INTO documents (
         code, notary_public, document_name, customer_a, customer_b, 
-        content, note, drafter, clerk, status, updated_at
+        content, note, drafter, clerk, status, updated_at, created_at
       ) VALUES (
         ${nextCode}, ${notary_public}, ${document_name}, ${customer_a}, ${customer_b}, 
-        ${content}, ${note}, ${drafter}, ${clerk}, ${status || '1. Tiếp nhận yêu cầu'}, NOW()
+        ${content}, ${note}, ${drafter}, ${clerk}, ${status || '1. Tiếp nhận yêu cầu'}, NOW(), NOW()
       )
     `;
     return NextResponse.json({ success: true, message: "Tạo hồ sơ thành công!", code: nextCode });
@@ -69,19 +69,22 @@ export async function PUT(request) {
             customer_a = ${customer_a}, customer_b = ${customer_b}, 
             content = ${content}, note = ${note}, drafter = ${drafter}, clerk = ${clerk}, 
             status = ${status}, 
-            updated_at = NOW() 
+            updated_at = NOW(),
+            completed_at = CASE WHEN ${status} = '8. Hoàn thành' THEN COALESCE(completed_at, NOW()) ELSE NULL END
         WHERE id = ${id}
       `;
     } else {
       // Nếu sửa nhanh Trạng thái / Ghi chú từ bảng
       await sql`
         UPDATE documents 
-        SET status = ${status}, note = ${note}, updated_at = NOW() 
+        SET status = ${status}, note = ${note}, updated_at = NOW(),
+            completed_at = CASE WHEN ${status} = '8. Hoàn thành' THEN COALESCE(completed_at, NOW()) ELSE NULL END
         WHERE id = ${id}
       `;
     }
     return NextResponse.json({ success: true });
   } catch (error) {
+    console.error(error);
     return NextResponse.json({ success: false, error: "Không thể cập nhật." }, { status: 500 });
   }
 }

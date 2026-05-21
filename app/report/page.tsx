@@ -1,0 +1,177 @@
+'use client';
+import useSWR from 'swr';
+import { useState } from 'react';
+import Link from 'next/link';
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
+export default function PersonalReportPage() {
+  const { data: responseData } = useSWR('/api/admin/documents', fetcher, {
+    refreshInterval: 3000, // Tự động làm mới mỗi 3 giây
+  });
+
+  const documents = responseData?.data || [];
+
+  // Hàm định dạng ngày giờ hiển thị đầy đủ, sắc nét
+  const formatDateTime = (dateTimeString: string | null) => {
+    if (!dateTimeString) return <span className="text-gray-400 italic">Chưa ghi nhận</span>;
+    const d = new Date(dateTimeString);
+    return (
+      <div className="text-xs font-medium text-gray-800">
+        <span className="font-bold text-gray-900 block text-sm">
+          {d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+        </span>
+        {d.toLocaleDateString('vi-VN')}
+      </div>
+    );
+  };
+
+  const getStatusBadge = (status: string) => {
+    if(status?.includes('8.')) return 'bg-gray-100 text-gray-600 border-gray-300';
+    if(status?.includes('7.')) return 'bg-green-50 text-green-700 border-green-200';
+    return 'bg-blue-50 text-blue-700 border-blue-200';
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 font-sans p-4 md:p-6">
+      <div className="max-w-[95%] mx-auto space-y-6">
+        
+        {/* THANH ĐIỀU HƯỚNG TRÊN CÙNG */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+          <div>
+            <h1 className="text-xl font-black text-gray-900 uppercase tracking-tight">
+              📊 Hệ Thống Kiểm Toán & Dòng Thời Gian Hồ Sơ
+            </h1>
+            <p className="text-xs text-gray-500 font-medium mt-0.5">
+              Trang tra cứu nội bộ hiển thị tất cả thuộc tính ẩn dưới Cơ sở dữ liệu
+            </p>
+          </div>
+          <Link 
+            href="/admin" 
+            className="text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg border transition-all"
+          >
+            ← Quay lại trang Admin
+          </Link>
+        </div>
+
+        {/* THỐNG KÊ SƠ BỘ */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+            <span className="text-xs font-bold text-gray-400 uppercase">Tổng hồ sơ lưu trữ</span>
+            <div className="text-2xl font-black text-gray-800 mt-1">{documents.length}</div>
+          </div>
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+            <span className="text-xs font-bold text-blue-400 uppercase">Đang tiến hành</span>
+            <div className="text-2xl font-black text-blue-700 mt-1">
+              {documents.filter((d: any) => !d.status?.includes('8.')).length}
+            </div>
+          </div>
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+            <span className="text-xs font-bold text-green-400 uppercase">Đã hoàn thành lưu kho</span>
+            <div className="text-2xl font-black text-green-700 mt-1">
+              {documents.filter((d: any) => d.status?.includes('8.')).length}
+            </div>
+          </div>
+        </div>
+
+        {/* BẢNG DỮ LIỆU ĐẦY ĐỦ THUỘC TÍNH */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left border-collapse min-w-[1200px]">
+              <thead className="text-xs text-gray-500 uppercase bg-gray-100 border-b border-gray-200">
+                <tr>
+                  <th className="px-4 py-4 w-24 text-center">Mã HS</th>
+                  <th className="px-4 py-4 w-48">Khách Hàng (Bên A / Bên B)</th>
+                  <th className="px-4 py-4 w-44">Chi Tiết Nghiệp Vụ</th>
+                  <th className="px-4 py-4 w-48">Cán Bộ Phụ Trách</th>
+                  <th className="px-4 py-4 w-52">Tiến Độ & Ghi Chú</th>
+                  <th className="px-4 py-4 w-36">Khởi Tạo (Created)</th>
+                  <th className="px-4 py-4 w-36">Cập Nhật Cuối (Updated)</th>
+                  <th className="px-4 py-4 w-36">Hoàn Thành (Completed)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 bg-white">
+                {documents.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="text-center py-12 text-gray-400 font-medium">
+                      Chưa có dữ liệu lịch sử hồ sơ.
+                    </td>
+                  </tr>
+                ) : (
+                  documents.map((doc: any) => (
+                    <tr key={doc.id} className="hover:bg-gray-50/80 transition-all align-top">
+                      
+                      {/* Mã HS */}
+                      <td className="px-4 py-4 text-center font-black text-gray-900 text-base">
+                        {doc.code}
+                      </td>
+
+                      {/* Khách hàng A & B */}
+                      <td className="px-4 py-4 space-y-1">
+                        <div className="flex items-start text-xs">
+                          <span className="font-bold text-gray-400 w-5 shrink-0">A:</span>
+                          <span className="font-semibold text-gray-900">{doc.customer_a || '-'}</span>
+                        </div>
+                        <div className="flex items-start text-xs">
+                          <span className="font-bold text-gray-400 w-5 shrink-0">B:</span>
+                          <span className="font-semibold text-gray-900">{doc.customer_b || '-'}</span>
+                        </div>
+                      </td>
+
+                      {/* Tên việc & Tóm tắt nội dung */}
+                      <td className="px-4 py-4 space-y-1">
+                        <span className="inline-block bg-blue-50 text-blue-800 text-xs font-bold px-2 py-0.5 rounded border border-blue-100">
+                          {doc.document_name || 'Chưa phân loại'}
+                        </span>
+                        {doc.content && (
+                          <p className="text-xs text-gray-500 italic pl-1 border-l border-gray-200 line-clamp-2">
+                            {doc.content}
+                          </p>
+                        )}
+                      </td>
+
+                      {/* Nhân sự phụ trách */}
+                      <td className="px-4 py-4 text-xs space-y-1">
+                        <div><span className="font-bold text-gray-400">CCV:</span> <span className="font-semibold text-blue-700">{doc.notary_public || '-'}</span></div>
+                        <div><span className="font-bold text-gray-400">Soạn:</span> <span className="font-medium text-gray-800">{doc.drafter || '-'}</span></div>
+                        <div><span className="font-bold text-gray-400">Trình:</span> <span className="font-medium text-gray-800">{doc.clerk || '-'}</span></div>
+                      </td>
+
+                      {/* Tiến độ và Ghi chú */}
+                      <td className="px-4 py-4 space-y-1.5">
+                        <span className={`inline-block text-xs font-bold px-2.5 py-1 rounded-md border ${getStatusBadge(doc.status)}`}>
+                          {doc.status}
+                        </span>
+                        {doc.note && (
+                          <p className="text-xs font-medium text-gray-600 bg-gray-50 p-1.5 rounded border border-gray-100">
+                            {doc.note}
+                          </p>
+                        )}
+                      </td>
+
+                      {/* MỐC THỜI GIAN KHỞI TẠO HỒ SƠ */}
+                      <td className="px-4 py-4 bg-gray-50/30">
+                        {formatDateTime(doc.created_at)}
+                      </td>
+
+                      {/* MỐC THỜI GIAN CẬP NHẬT GẦN NHẤT */}
+                      <td className="px-4 py-4">
+                        {formatDateTime(doc.updated_at)}
+                      </td>
+
+                      {/* MỐC THỜI GIAN HOÀN THÀNH (TRẠNG THÁI 8) */}
+                      <td className="px-4 py-4 bg-green-50/10">
+                        {formatDateTime(doc.completed_at)}
+                      </td>
+
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
