@@ -20,7 +20,7 @@ export default function AdminPage() {
     status: '1. Tiếp nhận yêu cầu' // Giá trị mặc định khi tạo mới
   });
   const [message, setMessage] = useState({ type: '', text: '' });
-  const [editingId, setEditingId] = useState(null);
+  const [editingId, setEditingId] = useState<any>(null);
 
   const { data: responseData, mutate } = useSWR('/api/admin/documents', fetcher, {
     refreshInterval: 2000, 
