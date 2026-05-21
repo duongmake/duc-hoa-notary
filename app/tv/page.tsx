@@ -2,7 +2,15 @@
 import useSWR from 'swr';
 import { useEffect, useState, useRef } from 'react'; // Thêm useRef
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+// Gắn thêm timestamp để Tivi luôn hiểu đây là một yêu cầu mới, cấm lưu cache
+const fetcher = (url: string) => fetch(`${url}?t=${new Date().getTime()}`, { 
+  cache: 'no-store',
+  headers: {
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  }
+}).then((res) => res.json());
 
 export default function TVDisplayPage() {
   const [currentTime, setCurrentTime] = useState('');
@@ -18,6 +26,9 @@ export default function TVDisplayPage() {
 
   const { data: responseData } = useSWR('/api/admin/documents', fetcher, {
     refreshInterval: 2000, 
+    refreshWhenHidden: true, // Bắt buộc chạy lấy dữ liệu kể cả khi Tivi cho tab ngủ ngầm
+    refreshWhenOffline: true, // Bắt buộc chạy kể cả khi mạng Tivi bị chập chờn
+    revalidateOnFocus: false, // Không phụ thuộc vào việc người dùng có thao tác (focus) hay không
   });
 
   const documents = responseData?.data || [];
