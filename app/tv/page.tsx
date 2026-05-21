@@ -1,11 +1,12 @@
 'use client';
 import useSWR from 'swr';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react'; // Thêm useRef
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function TVDisplayPage() {
   const [currentTime, setCurrentTime] = useState('');
+  const scrollRef = useRef<HTMLDivElement>(null); // Dùng để điều khiển cuộn
 
   // Cập nhật đồng hồ
   useEffect(() => {
@@ -21,6 +22,40 @@ export default function TVDisplayPage() {
 
   const documents = responseData?.data || [];
 
+  // HIỆU ỨNG TỰ ĐỘNG TRƯỢT LÊN / TRƯỢT XUỐNG
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    let step = 1; // Tốc độ trượt (1 pixel mỗi nhịp)
+    let delay = 3000; // Dừng 3 giây ở đầu trang trước khi bắt đầu trượt
+
+    const timer = setInterval(() => {
+      // Nếu danh sách ngắn, chưa tràn màn hình thì không cần trượt
+      if (el.scrollHeight <= el.clientHeight) return;
+
+      if (delay > 0) {
+        delay -= 20; // Đếm ngược thời gian chờ
+        return;
+      }
+
+      el.scrollTop += step;
+
+      // Khi trượt chạm đáy
+      if (el.scrollTop + el.clientHeight >= el.scrollHeight - 1) {
+        step = -1; // Đổi chiều trượt ngược lên
+        delay = 3000; // Dừng lại 3 giây ở đáy cho khách đọc
+      }
+      // Khi trượt ngược lại chạm đỉnh
+      else if (el.scrollTop <= 0 && step === -1) {
+        step = 1; // Đổi chiều trượt xuống lại
+        delay = 3000; // Dừng lại 3 giây ở đỉnh
+      }
+    }, 25); // Nhịp chạy 25ms (tạo cảm giác trượt cực mượt)
+
+    return () => clearInterval(timer);
+  }, [documents]); // Chạy lại hiệu ứng nếu có hồ sơ mới thêm vào
+
   const getStatusColor = (status: string) => {
     if(status?.includes('1.')) return 'bg-gray-100 text-gray-700';
     if(status?.includes('2.')) return 'bg-blue-50 text-blue-700';
@@ -33,10 +68,9 @@ export default function TVDisplayPage() {
   };
 
   return (
-    // Đã ép cứng nền trắng (bg-white) và chữ đen (text-gray-900)
-    <div className="min-h-screen bg-white text-gray-900 font-sans flex flex-col">
-      {/* HEADER */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center shadow-sm">
+    <div className="min-h-screen bg-white text-gray-900 font-sans flex flex-col h-screen overflow-hidden">
+      {/* HEADER TIVI */}
+      <div className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center shadow-sm z-20">
         <div className="flex items-center gap-3">
           <div className="bg-blue-700 text-white px-3 py-1 rounded font-black text-xl">VPCC</div>
           <div>
@@ -58,84 +92,94 @@ export default function TVDisplayPage() {
       </div>
 
       {/* NỘI DUNG BẢNG */}
-      <div className="p-6 flex-1 flex flex-col">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex-1">
-          <table className="w-full text-sm text-left border-collapse bg-white">
-            <thead className="text-xs text-gray-600 uppercase bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-4 w-28">Mã HS</th>
-                <th className="px-6 py-4">Khách Hàng / Nội Dung</th>
-                <th className="px-6 py-4 w-48">Phụ Trách</th>
-                <th className="px-6 py-4 w-64 text-center">Tiến Độ Hiện Tại</th>
-                <th className="px-6 py-4 w-32 text-right">Thời Gian</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {!responseData ? (
-                <tr><td colSpan={5} className="text-center py-20 text-gray-400">Đang tải dữ liệu...</td></tr>
-              ) : documents.map((doc: any) => (
-                <tr key={doc.id} className="hover:bg-blue-50/50 transition bg-white">
-                  {/* Mã HS */}
-                  <td className="px-6 py-5 font-black text-gray-900 text-lg align-top">
-                    {doc.code}
-                  </td>
-                  
-                  {/* Khách hàng / Nội dung */}
-                  <td className="px-6 py-5 space-y-1.5 align-top">
-                    <div className="font-bold text-gray-800 text-base">
-                        {doc.document_name || 'Hồ sơ công chứng'}
-                    </div>
-                    <div className="flex items-start text-sm">
-                      <span className="font-bold text-gray-400 w-6 shrink-0">A:</span> 
-                      <span className="font-semibold text-gray-900">{doc.customer_a || '-'}</span>
-                    </div>
-                    <div className="flex items-start text-sm">
-                      <span className="font-bold text-gray-400 w-6 shrink-0">B:</span> 
-                      <span className="font-semibold text-gray-900">{doc.customer_b || '-'}</span>
-                    </div>
-                  </td>
-
-                  {/* THÔNG TIN PHỤ TRÁCH */}
-                  <td className="px-6 py-5 space-y-2 align-top">
-                    <div className="flex items-center text-sm">
-                      <span className="font-bold text-gray-400 w-12">CCV:</span> 
-                      <span className="font-bold text-blue-700">{doc.notary_public || '-'}</span>
-                    </div>
-                    <div className="flex items-center text-sm">
-                      <span className="font-bold text-gray-400 w-12">Soạn:</span> 
-                      <span className="font-semibold text-gray-800">{doc.drafter || '-'}</span>
-                    </div>
-                    <div className="flex items-center text-sm">
-                      <span className="font-bold text-gray-400 w-12">Ký:</span> 
-                      <span className="font-semibold text-gray-800">{doc.clerk || '-'}</span>
-                    </div>
-                  </td>
-
-                  {/* Trạng thái */}
-                  <td className="px-6 py-5 align-top">
-                    <div className={`rounded-lg px-4 py-3 text-center font-bold shadow-sm border ${getStatusColor(doc.status)}`}>
-                        {doc.status}
-                    </div>
-                    {doc.note && (
-                        <div className="text-xs text-gray-500 mt-2 italic text-center">
-                            "{doc.note}"
-                        </div>
-                    )}
-                  </td>
-
-                  {/* Thời gian cập nhật */}
-                  <td className="px-6 py-5 text-right align-top">
-                    <div className="text-lg font-black text-gray-800">
-                      {new Date(doc.updated_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                        {new Date(doc.updated_at).toLocaleDateString('vi-VN')}
-                    </div>
-                  </td>
+      <div className="p-6 flex-1 flex flex-col min-h-0">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex-1 flex flex-col relative">
+          
+          {/* Vùng bọc danh sách có khả năng trượt (kèm CSS ẩn thanh cuộn) */}
+          <div 
+            ref={scrollRef} 
+            className="flex-1 overflow-y-auto"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }} // Ẩn scrollbar trên Firefox & IE
+          >
+            {/* Thêm CSS ẩn thanh cuộn cho Chrome/Safari/Edge */}
+            <style>{`div::-webkit-scrollbar { display: none; }`}</style>
+            
+            <table className="w-full text-sm text-left border-collapse bg-white">
+              {/* THEAD ĐƯỢC GHIM CỐ ĐỊNH (Sticky) */}
+              <thead className="text-xs text-gray-600 uppercase bg-gray-50 border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+                <tr>
+                  <th className="px-6 py-4 w-28">Mã HS</th>
+                  <th className="px-6 py-4">Khách Hàng / Nội Dung</th>
+                  <th className="px-6 py-4 w-48">Phụ Trách</th>
+                  <th className="px-6 py-4 w-64 text-center">Tiến Độ Hiện Tại</th>
+                  <th className="px-6 py-4 w-32 text-right">Thời Gian</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              
+              <tbody className="divide-y divide-gray-100">
+                {!responseData ? (
+                  <tr><td colSpan={5} className="text-center py-20 text-gray-400">Đang tải dữ liệu...</td></tr>
+                ) : documents.length === 0 ? (
+                  <tr><td colSpan={5} className="text-center py-20 text-gray-400 font-bold">Chưa có hồ sơ nào trong ngày</td></tr>
+                ) : documents.map((doc: any) => (
+                  <tr key={doc.id} className="hover:bg-blue-50/50 transition bg-white">
+                    <td className="px-6 py-5 font-black text-gray-900 text-lg align-top">
+                      {doc.code}
+                    </td>
+                    
+                    <td className="px-6 py-5 space-y-1.5 align-top">
+                      <div className="font-bold text-gray-800 text-base">
+                          {doc.document_name || 'Hồ sơ công chứng'}
+                      </div>
+                      <div className="flex items-start text-sm">
+                        <span className="font-bold text-gray-400 w-6 shrink-0">A:</span> 
+                        <span className="font-semibold text-gray-900">{doc.customer_a || '-'}</span>
+                      </div>
+                      <div className="flex items-start text-sm">
+                        <span className="font-bold text-gray-400 w-6 shrink-0">B:</span> 
+                        <span className="font-semibold text-gray-900">{doc.customer_b || '-'}</span>
+                      </div>
+                    </td>
+
+                    <td className="px-6 py-5 space-y-2 align-top">
+                      <div className="flex items-center text-sm">
+                        <span className="font-bold text-gray-400 w-12">CCV:</span> 
+                        <span className="font-bold text-blue-700">{doc.notary_public || '-'}</span>
+                      </div>
+                      <div className="flex items-center text-sm">
+                        <span className="font-bold text-gray-400 w-12">Soạn:</span> 
+                        <span className="font-semibold text-gray-800">{doc.drafter || '-'}</span>
+                      </div>
+                      <div className="flex items-center text-sm">
+                        <span className="font-bold text-gray-400 w-12">Ký:</span> 
+                        <span className="font-semibold text-gray-800">{doc.clerk || '-'}</span>
+                      </div>
+                    </td>
+
+                    <td className="px-6 py-5 align-top">
+                      <div className={`rounded-lg px-4 py-3 text-center font-bold shadow-sm border ${getStatusColor(doc.status)}`}>
+                          {doc.status}
+                      </div>
+                      {doc.note && (
+                          <div className="text-xs text-gray-500 mt-2 italic text-center">
+                              "{doc.note}"
+                          </div>
+                      )}
+                    </td>
+
+                    <td className="px-6 py-5 text-right align-top">
+                      <div className="text-lg font-black text-gray-800">
+                        {new Date(doc.updated_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                          {new Date(doc.updated_at).toLocaleDateString('vi-VN')}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
         
         {/* FOOTER */}
