@@ -229,17 +229,39 @@ export default function AdminPage() {
                   <tr key={doc.id} className="hover:bg-blue-50/50 transition">
                     <td className="px-4 py-4 font-black text-gray-800">{doc.code}</td>
                     
-                    <td className="px-4 py-4">
-                      <div className="font-bold text-gray-800 text-base">{doc.document_name || 'Chưa phân loại'}</div>
-                      <div className="text-gray-600 mt-1"><span className="font-semibold text-gray-500">A:</span> {doc.customer_a || '-'}</div>
-                      <div className="text-gray-600"><span className="font-semibold text-gray-500">B:</span> {doc.customer_b || '-'}</div>
-                      {doc.content && <div className="text-xs text-gray-400 mt-1 italic">"{doc.content}"</div>}
+                    <td className="px-4 py-4 space-y-1.5">
+                      <div className="font-bold text-gray-800 text-base pb-1">{doc.document_name || 'Chưa phân loại'}</div>
+                      
+                      <div className="flex items-start text-sm">
+                        <span className="font-bold text-gray-400 w-6 shrink-0">A:</span> 
+                        <span className="font-semibold text-gray-900">{doc.customer_a || '-'}</span>
+                      </div>
+                      
+                      <div className="flex items-start text-sm">
+                        <span className="font-bold text-gray-400 w-6 shrink-0">B:</span> 
+                        <span className="font-semibold text-gray-900">{doc.customer_b || '-'}</span>
+                      </div>
+                      
+                      {doc.content && (
+                        <div className="text-sm text-gray-500 mt-2 italic border-l-2 border-gray-200 pl-2">
+                          {doc.content}
+                        </div>
+                      )}
                     </td>
 
-                    <td className="px-4 py-4 text-xs space-y-1">
-                      <div><span className="font-semibold text-gray-500">CCV:</span> {doc.notary_public || '-'}</div>
-                      <div><span className="font-semibold text-gray-500">Soạn:</span> {doc.drafter || '-'}</div>
-                      <div><span className="font-semibold text-gray-500">Ký:</span> {doc.clerk || '-'}</div>
+                    <td className="px-4 py-4 space-y-2">
+                      <div className="flex items-center text-sm">
+                        <span className="font-bold text-gray-400 w-12">CCV:</span> 
+                        <span className="font-bold text-blue-700">{doc.notary_public || '-'}</span>
+                      </div>
+                      <div className="flex items-center text-sm">
+                        <span className="font-bold text-gray-400 w-12">Soạn:</span> 
+                        <span className="font-semibold text-gray-800">{doc.drafter || '-'}</span>
+                      </div>
+                      <div className="flex items-center text-sm">
+                        <span className="font-bold text-gray-400 w-12">Ký:</span> 
+                        <span className="font-semibold text-gray-800">{doc.clerk || '-'}</span>
+                      </div>
                     </td>
 
                     <td className="px-4 py-4">
