@@ -6,14 +6,26 @@ import Link from 'next/link';
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function PersonalReportPage() {
-  const { data: responseData } = useSWR('/api/admin/documents', fetcher, {
+  const { data: responseData, mutate } = useSWR('/api/admin/documents', fetcher, {
     refreshInterval: 3000, 
   });
 
   const documents = responseData?.data || [];
   const [isExporting, setIsExporting] = useState(false);
 
-  // Hàm định dạng ngày giờ hiển thị trên giao diện web
+  // Tính tổng số tiền thu được của tất cả hồ sơ
+  const totalRevenue = documents.reduce((sum: number, doc: any) => sum + (Number(doc.total_amount) || 0), 0);
+
+  // Hàm xử lý cập nhật nhanh số tiền khi nhập xong trên bảng
+  const handleQuickAmountChange = async (id: any, newAmount: number) => {
+    await fetch('/api/admin/documents', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, total_amount: newAmount }),
+    });
+    mutate(); // Đồng bộ lại số liệu ngay lập tức
+  };
+
   const formatDateTime = (dateTimeString: string | null) => {
     if (!dateTimeString) return <span className="text-gray-400 italic">Chưa ghi nhận</span>;
     const d = new Date(dateTimeString);
@@ -27,7 +39,7 @@ export default function PersonalReportPage() {
     );
   };
 
-  // CHỨC NĂNG XUẤT FILE EXCEL (.XLSX)
+  // XUẤT EXCEL CÓ THÀNH TIỀN
   const handleExportExcel = async () => {
     if (documents.length === 0) {
       alert("Chưa có dữ liệu để xuất file!");
@@ -36,10 +48,8 @@ export default function PersonalReportPage() {
     
     setIsExporting(true);
     try {
-      // Tải thư viện xlsx động để tối ưu hóa dung lượng trang
       const XLSX = await import('xlsx');
 
-      // Định dạng và làm sạch dữ liệu trước khi nạp vào Excel
       const excelData = documents.map((doc: any) => ({
         'MÃ HỒ SƠ': doc.code,
         'LOẠI HỒ SƠ': doc.document_name || 'Chưa phân loại',
@@ -51,29 +61,26 @@ export default function PersonalReportPage() {
         'NHÂN VIÊN PHOTO/TRÌNH KÝ': doc.clerk || '-',
         'TIẾN ĐỘ HIỆN TẠI': doc.status,
         'GHI CHÚ VĂN PHÒNG': doc.note || '-',
+        'THÀNH TIỀN (VND)': doc.total_amount || 0, // Đã bổ sung thuộc tính này vào Excel
         'THỜI GIAN TIẾP NHẬN': doc.created_at ? new Date(doc.created_at).toLocaleString('vi-VN') : 'Chưa ghi nhận',
         'CẬP NHẬT CUỐI CÙNG': doc.updated_at ? new Date(doc.updated_at).toLocaleString('vi-VN') : 'Chưa ghi nhận',
         'THỜI GIAN HOÀN THÀNH': doc.completed_at ? new Date(doc.completed_at).toLocaleString('vi-VN') : 'Chưa hoàn thành',
       }));
 
-      // Khởi tạo Worksheet và Workbook mới
       const worksheet = XLSX.utils.json_to_sheet(excelData);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Danh Sách Hồ Sơ');
 
-      // Cấu hình độ rộng tối thiểu cho các cột trong Excel để không bị che chữ (22 ký tự)
       const columnWidths = Object.keys(excelData[0] || {}).map(() => ({ wch: 22 }));
       worksheet['!cols'] = columnWidths;
 
-      // Đặt tên file kèm theo ngày xuất bản hiện tại
       const today = new Date().toISOString().slice(0, 10);
       const fileName = `Bao_Cao_Tien_Do_VPCC_Duc_Hoa_${today}.xlsx`;
 
-      // Tiến hành tải file xuống máy tính
       XLSX.writeFile(workbook, fileName);
     } catch (error) {
-      console.error("Lỗi xuất file Excel:", error);
-      alert("Có lỗi xảy ra trong quá trình xuất dữ liệu ra Excel.");
+      console.error(error);
+      alert("Có lỗi xảy ra khi xuất file.");
     } finally {
       setIsExporting(false);
     }
@@ -89,18 +96,17 @@ export default function PersonalReportPage() {
     <div className="min-h-screen bg-gray-50 font-sans p-4 md:p-6">
       <div className="max-w-[95%] mx-auto space-y-6">
         
-        {/* THANH ĐIỀU HƯỚNG TRÊN CÙNG */}
+        {/* TOP BAR */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
           <div>
             <h1 className="text-xl font-black text-gray-900 uppercase tracking-tight">
-              📊 Hệ Thống Kiểm Toán & Dòng Thời Gian Hồ Sơ
+              📊 Hệ Thống Kiểm Toán & Kế Toán Hồ Sơ
             </h1>
             <p className="text-xs text-gray-500 font-medium mt-0.5">
-              Trang tra cứu nội bộ hiển thị tất cả thuộc tính ẩn dưới Cơ sở dữ liệu
+              Trang tra cứu thuộc tính ẩn và chốt doanh thu cuối ngày văn phòng
             </p>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-            {/* ĐÃ BỔ SUNG: NÚT XUẤT EXCEL CHUYÊN NGHIỆP */}
             <button
               onClick={handleExportExcel}
               disabled={isExporting}
@@ -121,8 +127,8 @@ export default function PersonalReportPage() {
           </div>
         </div>
 
-        {/* THỐNG KÊ SƠ BỘ */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* THỐNG KÊ KÈM TỔNG TIỀN DOANH THU */}
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
             <span className="text-xs font-bold text-gray-400 uppercase">Tổng hồ sơ lưu trữ</span>
             <div className="text-2xl font-black text-gray-800 mt-1">{documents.length}</div>
@@ -139,88 +145,86 @@ export default function PersonalReportPage() {
               {documents.filter((d: any) => d.status?.includes('8.')).length}
             </div>
           </div>
+          {/* HỘP HIỂN THỊ TỔNG DOANH THU */}
+          <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-4 rounded-xl shadow-sm border border-amber-200">
+            <span className="text-xs font-bold text-amber-600 uppercase">Tổng số tiền tổng hợp</span>
+            <div className="text-2xl font-black text-amber-700 mt-1">
+              {totalRevenue.toLocaleString('vi-VN')} đ
+            </div>
+          </div>
         </div>
 
         {/* BẢNG DỮ LIỆU ĐẦY ĐỦ THUỘC TÍNH */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left border-collapse min-w-[1200px]">
+            <table className="w-full text-sm text-left border-collapse min-w-[1400px]">
               <thead className="text-xs text-gray-500 uppercase bg-gray-100 border-b border-gray-200">
                 <tr>
                   <th className="px-4 py-4 w-24 text-center">Mã HS</th>
-                  <th className="px-4 py-4 w-48">Khách Hàng (Bên A / Bên B)</th>
-                  <th className="px-4 py-4 w-44">Chi Tiết Nghiệp Vụ</th>
-                  <th className="px-4 py-4 w-48">Cán Bộ Phụ Trách</th>
-                  <th className="px-4 py-4 w-52">Tiến Độ & Ghi Chú</th>
-                  <th className="px-4 py-4 w-36">Khởi Tạo (Created)</th>
-                  <th className="px-4 py-4 w-36">Cập Nhật Cuối (Updated)</th>
-                  <th className="px-4 py-4 w-36">Hoàn Thành (Completed)</th>
+                  <th className="px-4 py-4 w-44">Khách Hàng (A / B)</th>
+                  <th className="px-4 py-4 w-40">Nhiệm Vụ</th>
+                  <th className="px-4 py-4 w-44">Phụ Trách</th>
+                  <th className="px-4 py-4 w-48">Tiến Độ & Ghi Chú</th>
+                  {/* CỘT THÀNH TIỀN MỚI */}
+                  <th className="px-4 py-4 w-40 text-center bg-amber-50/40">Thành Tiền (VND)</th>
+                  <th className="px-4 py-4 w-32">Khởi Tạo</th>
+                  <th className="px-4 py-4 w-32">Cập Nhật</th>
+                  <th className="px-4 py-4 w-32">Hoàn Thành</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 bg-white">
                 {documents.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="text-center py-12 text-gray-400 font-medium">
-                      Chưa có dữ liệu lịch sử hồ sơ.
-                    </td>
-                  </tr>
+                  <tr><td colSpan={9} className="text-center py-12 text-gray-400 font-medium">Chưa có dữ liệu lịch sử hồ sơ.</td></tr>
                 ) : (
                   documents.map((doc: any) => (
                     <tr key={doc.id} className="hover:bg-gray-50/80 transition-all align-top">
-                      <td className="px-4 py-4 text-center font-black text-gray-900 text-base">
-                        {doc.code}
-                      </td>
+                      <td className="px-4 py-4 text-center font-black text-gray-900 text-base">{doc.code}</td>
 
                       <td className="px-4 py-4 space-y-1">
                         <div className="flex items-start text-xs">
                           <span className="font-bold text-gray-400 w-5 shrink-0">A:</span>
-                          <span className="font-semibold text-gray-900">{doc.customer_a || '-'}</span>
+                          <span className="font-semibold text-gray-900 truncate">{doc.customer_a || '-'}</span>
                         </div>
                         <div className="flex items-start text-xs">
                           <span className="font-bold text-gray-400 w-5 shrink-0">B:</span>
-                          <span className="font-semibold text-gray-900">{doc.customer_b || '-'}</span>
+                          <span className="font-semibold text-gray-900 truncate">{doc.customer_b || '-'}</span>
                         </div>
                       </td>
 
                       <td className="px-4 py-4 space-y-1">
-                        <span className="inline-block bg-blue-50 text-blue-800 text-xs font-bold px-2 py-0.5 rounded border border-blue-100">
-                          {doc.document_name || 'Chưa phân loại'}
-                        </span>
-                        {doc.content && (
-                          <p className="text-xs text-gray-500 italic pl-1 border-l border-gray-200 line-clamp-2">
-                            {doc.content}
-                          </p>
-                        )}
+                        <span className="inline-block bg-blue-50 text-blue-800 text-xs font-bold px-2 py-0.5 rounded border border-blue-100">{doc.document_name || 'Chưa phân loại'}</span>
+                        {doc.content && <p className="text-xs text-gray-500 italic pl-1 border-l border-gray-200 line-clamp-1">{doc.content}</p>}
                       </td>
 
                       <td className="px-4 py-4 text-xs space-y-1">
                         <div><span className="font-bold text-gray-400">CCV:</span> <span className="font-semibold text-blue-700">{doc.notary_public || '-'}</span></div>
                         <div><span className="font-bold text-gray-400">Soạn:</span> <span className="font-medium text-gray-800">{doc.drafter || '-'}</span></div>
-                        <div><span className="font-bold text-gray-400">Trình:</span> <span className="font-medium text-gray-800">{doc.clerk || '-'}</span></div>
                       </td>
 
                       <td className="px-4 py-4 space-y-1.5">
-                        <span className={`inline-block text-xs font-bold px-2.5 py-1 rounded-md border ${getStatusBadge(doc.status)}`}>
-                          {doc.status}
-                        </span>
-                        {doc.note && (
-                          <p className="text-xs font-medium text-gray-600 bg-gray-50 p-1.5 rounded border border-gray-100">
-                            {doc.note}
-                          </p>
-                        )}
+                        <span className={`inline-block text-xs font-bold px-2.5 py-1 rounded-md border ${getStatusBadge(doc.status)}`}>{doc.status}</span>
+                        {doc.note && <p className="text-xs font-medium text-gray-600 bg-gray-50 p-1 rounded border border-gray-100 line-clamp-1">{doc.note}</p>}
                       </td>
 
-                      <td className="px-4 py-4 bg-gray-50/30">
-                        {formatDateTime(doc.created_at)}
+                      {/* Ô Ô NHẬP LIỆU SỐ TIỀN THU ĐƯỢC CỦA TỪNG HỒ SƠ */}
+                      <td className="px-4 py-4 bg-amber-50/10">
+                        <input 
+                          type="number"
+                          defaultValue={doc.total_amount || ''}
+                          onBlur={(e) => {
+                            const val = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
+                            if (val !== doc.total_amount) {
+                              handleQuickAmountChange(doc.id, val);
+                            }
+                          }}
+                          className="w-full bg-gray-50 border border-gray-200 hover:border-gray-300 focus:bg-white focus:border-amber-500 rounded px-2 py-1.5 text-sm font-black text-gray-800 text-right transition outline-none focus:ring-2 focus:ring-amber-200"
+                          placeholder="0"
+                        />
                       </td>
 
-                      <td className="px-4 py-4">
-                        {formatDateTime(doc.updated_at)}
-                      </td>
-
-                      <td className="px-4 py-4 bg-green-50/10">
-                        {formatDateTime(doc.completed_at)}
-                      </td>
+                      <td className="px-4 py-4 bg-gray-50/30">{formatDateTime(doc.created_at)}</td>
+                      <td className="px-4 py-4">{formatDateTime(doc.updated_at)}</td>
+                      <td className="px-4 py-4 bg-green-50/10">{formatDateTime(doc.completed_at)}</td>
                     </tr>
                   ))
                 )}

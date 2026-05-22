@@ -58,9 +58,9 @@ export async function POST(request) {
 export async function PUT(request) {
   try {
     const data = await request.json();
-    const { id, status, note, customer_a } = data;
+    const { id, status, note, customer_a, total_amount } = data;
 
-    // Nếu sửa từ Form (có trường customer_a)
+    // Trường hợp 1: Sửa từ Form Admin (có trường customer_a)
     if (customer_a) {
       const { notary_public, document_name, customer_b, content, drafter, clerk } = data;
       await sql`
@@ -73,8 +73,17 @@ export async function PUT(request) {
             completed_at = CASE WHEN ${status} = '8. Hoàn thành' THEN COALESCE(completed_at, NOW()) ELSE NULL END
         WHERE id = ${id}
       `;
-    } else {
-      // Nếu sửa nhanh Trạng thái / Ghi chú từ bảng
+    } 
+    // Trường hợp 2: Cập nhật riêng "Thành tiền" từ trang Report
+    else if (total_amount !== undefined) {
+      await sql`
+        UPDATE documents 
+        SET total_amount = ${total_amount}, updated_at = NOW()
+        WHERE id = ${id}
+      `;
+    } 
+    // Trường hợp 3: Sửa nhanh Trạng thái / Ghi chú từ bảng Admin
+    else {
       await sql`
         UPDATE documents 
         SET status = ${status}, note = ${note}, updated_at = NOW(),
