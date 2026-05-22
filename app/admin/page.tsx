@@ -13,6 +13,12 @@ const STATUSES = [
   '4. Khách ký', '5. Công chứng viên ký', '6. Đóng dấu', '7. Thu phí và trả hồ sơ', '8. Hoàn thành'
 ];
 
+const BANKS = [
+  'Sacombank', 'Nam A Bank', 'BVBank', 'MB Bank', 'MTV Shinhan', 
+  'Agribank', 'Vietcombank', 'TP Bank', 'VietBank', 'SaigonBank', 
+  'OCB', 'Vietinbank', 'BIDV', 'Techcombank'
+];
+
 export default function AdminPage() {
   const [formData, setFormData] = useState({
     code: '', notary_public: '', document_name: '', customer_a: '',
@@ -20,7 +26,7 @@ export default function AdminPage() {
     status: '1. Tiếp nhận yêu cầu' 
   });
   const [message, setMessage] = useState({ type: '', text: '' });
-  const [editingId, setEditingId] = useState<any>(null); // Đã sửa thành <any>
+  const [editingId, setEditingId] = useState<any>(null); 
 
   const { data: responseData, mutate } = useSWR('/api/admin/documents', fetcher, {
     refreshInterval: 2000, 
@@ -161,7 +167,21 @@ export default function AdminPage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-600 mb-1 uppercase">Khách Hàng A</label>
-                <input name="customer_a" type="text" placeholder="Bên Bán / Bên Tặng Cho..." value={formData.customer_a} onChange={handleChange} className="w-full border border-gray-300 rounded p-2 text-sm" />
+                <input 
+                  name="customer_a" 
+                  type="text" 
+                  list={formData.document_name === 'Thế chấp' ? 'bank-list' : undefined}
+                  placeholder={formData.document_name === 'Thế chấp' ? "Nhập hoặc chọn Ngân hàng..." : "Bên Bán / Bên Tặng Cho..."} 
+                  value={formData.customer_a} 
+                  onChange={handleChange} 
+                  className="w-full border border-gray-300 rounded p-2 text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none" 
+                />
+                {/* Danh sách Datalist ngầm: Chỉ kích hoạt khi chọn Thế chấp */}
+                {formData.document_name === 'Thế chấp' && (
+                  <datalist id="bank-list">
+                    {BANKS.map(bank => <option key={bank} value={bank} />)}
+                  </datalist>
+                )}
               </div>
               <div>
                 <label className="block text-xs font-bold text-gray-600 mb-1 uppercase">Khách Hàng B</label>
@@ -292,7 +312,6 @@ export default function AdminPage() {
 
                     <td className="px-4 py-4 text-right">
                       <div className="flex items-center justify-center gap-2">
-                        {/* Nút SỬA */}
                         <button 
                           onClick={() => handleEditClick(doc)} 
                           title="Sửa hồ sơ"
@@ -304,7 +323,6 @@ export default function AdminPage() {
                           Sửa
                         </button>
 
-                        {/* Nút XÓA */}
                         <button 
                           onClick={() => handleDelete(doc.id)} 
                           title="Xóa hồ sơ"
