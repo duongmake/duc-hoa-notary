@@ -5,9 +5,9 @@ import useSWR from 'swr';
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 const NOTARIES = ['Trần Văn Châu', 'Lê Văn Giúp', 'Trần Thanh Vũ'];
-const DOC_TYPES = ['Mua bán', 'Tặng cho', 'Thuê - mượn', 'Thế chấp', 'Ủy quyền', 'Thừa kế'];
-const DRAFTERS = ['Phạm Tiến Dương', 'Trần Lệ Xuân', 'Trần Hồng Ngọc'];
-const CLERKS = ['Nguyễn Văn Nhanh', 'Trần Văn Khanh', 'Hà Thanh Tùng'];
+const DOC_TYPES = ['Chuyển nhượng - Mua bán', 'Tặng cho', 'Thuê - Mượn', 'Thế chấp', 'Cầm cố', 'Bảo lãnh', 'Ủy quyền', 'Chuyển đổi - Trao đổi', 'Góp vốn', 'Di chúc', 'Thừa kế', 'Tài sản vợ chồng', 'Vay', 'Giao dịch khác'];
+const DRAFTERS = ['Lê Trần Thiện Toàn', 'Trần Quỳnh Hương', 'Nguyễn Thị Kim Thoa', 'Trần Hồng Ngọc', 'Nguyễn Thị Thu Thủy', 'Trần Lệ Xuân', 'Nguyễn Tâm Lý Em', 'Phạm Tiến Dương'];
+const CLERKS = ['Trần Văn Hòa', 'Nguyễn Văn Nhanh', 'Trần Văn Khanh', 'Ngô Ngọc Toàn', 'Trần Trường Huy', 'Hà Thanh Tùng','Lê Trần Thiện Thắng', 'Trần Lệ Xuân'];
 const STATUSES = [
   '1. Tiếp nhận yêu cầu', '2. Soạn thảo', '3. Photo', 
   '4. Khách ký', '5. Công chứng viên ký', '6. Đóng dấu', '7. Thu phí và trả hồ sơ', '8. Hoàn thành'
