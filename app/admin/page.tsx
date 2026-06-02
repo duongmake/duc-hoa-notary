@@ -27,6 +27,9 @@ export default function AdminPage() {
   });
   const [message, setMessage] = useState({ type: '', text: '' });
   const [editingId, setEditingId] = useState<any>(null); 
+  
+  // ĐÃ THÊM: Trạng thái đóng/mở form nhập liệu
+  const [isFormOpen, setIsFormOpen] = useState(false);
 
   const { data: responseData, mutate } = useSWR('/api/admin/documents', fetcher, {
     refreshInterval: 2000, 
@@ -52,11 +55,23 @@ export default function AdminPage() {
 
     if (res.ok) {
       setMessage({ type: 'success', text: editingId ? 'Cập nhật thành công!' : 'Tạo hồ sơ thành công!' });
-      handleCancelEdit();
+      handleCloseForm(); // Tự động đóng form khi lưu thành công
       mutate(); 
     } else {
       setMessage({ type: 'error', text: data.error || 'Có lỗi xảy ra.' });
     }
+  };
+
+  // ĐÃ THÊM: Hàm mở form khi bấm Tạo mới
+  const handleOpenCreateForm = () => {
+    setEditingId(null);
+    setFormData({ 
+      code: '', notary_public: '', document_name: '', customer_a: '', 
+      customer_b: '', content: '', note: '', drafter: '', clerk: '', 
+      status: '1. Tiếp nhận yêu cầu' 
+    });
+    setIsFormOpen(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleEditClick = (doc: any) => {
@@ -67,10 +82,13 @@ export default function AdminPage() {
       note: doc.note || '', drafter: doc.drafter || '', clerk: doc.clerk || '',
       status: doc.status || '1. Tiếp nhận yêu cầu' 
     });
+    setIsFormOpen(true); // Bật form lên khi bấm Sửa
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleCancelEdit = () => {
+  // ĐÃ SỬA: Hàm đóng form và reset dữ liệu
+  const handleCloseForm = () => {
+    setIsFormOpen(false);
     setEditingId(null);
     setFormData({ 
       code: '', notary_public: '', document_name: '', customer_a: '', 
@@ -119,11 +137,29 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-gray-100 p-4 md:p-6 font-sans">
       <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex justify-between items-center border-b border-gray-300 pb-4">
+        
+        {/* HEADER */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-gray-300 pb-4 gap-4">
           <h1 className="text-2xl font-bold text-gray-800">Quản Lý Tiến Độ Hồ Sơ Công Chứng</h1>
-          <span className="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded flex items-center gap-2 shadow-sm">
-            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Đồng bộ Real-time
-          </span>
+          
+          <div className="flex items-center gap-3">
+            <span className="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1.5 rounded flex items-center gap-2 shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Đồng bộ Real-time
+            </span>
+            
+            {/* ĐÃ THÊM: Nút mở form tạo mới. Sẽ ẩn đi nếu form đang mở để tránh bấm trùng */}
+            {!isFormOpen && (
+              <button 
+                onClick={handleOpenCreateForm}
+                className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-1.5 rounded-md shadow-sm transition-all flex items-center gap-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Tạo Hồ Sơ Mới
+              </button>
+            )}
+          </div>
         </div>
 
         {message.text && (
@@ -132,101 +168,110 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* BẢNG NHẬP LIỆU */}
-        <div className={`p-6 rounded-xl shadow-sm border ${editingId ? 'bg-yellow-50 border-yellow-300' : 'bg-white border-gray-200'}`}>
-          <h2 className="text-lg font-bold text-gray-700 mb-5">
-            {editingId ? '✏️ Cập Nhật Thông Tin Hồ Sơ' : '📄 Khởi Tạo Hồ Sơ Mới'}
-          </h2>
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            
-            {/* Cột 1 */}
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1 uppercase">Loại Hồ Sơ</label>
-                <select name="document_name" value={formData.document_name} onChange={handleChange} className="w-full border border-gray-300 rounded p-2 text-sm bg-white">
-                  <option value="">-- Chọn loại --</option>
-                  {DOC_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1 uppercase">Công Chứng Viên</label>
-                <select name="notary_public" value={formData.notary_public} onChange={handleChange} className="w-full border border-gray-300 rounded p-2 text-sm bg-white">
-                  <option value="">-- Chọn CCV --</option>
-                  {NOTARIES.map(n => <option key={n} value={n}>{n}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1 uppercase">Trạng Thái Hồ Sơ</label>
-                <select name="status" value={formData.status} onChange={handleChange} className="w-full border border-gray-300 rounded p-2 text-sm bg-white font-semibold text-gray-700">
-                  {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </div>
-            </div>
-
-            {/* Cột 2 */}
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1 uppercase">Khách Hàng A</label>
-                <input 
-                  name="customer_a" 
-                  type="text" 
-                  list={formData.document_name === 'Thế chấp' ? 'bank-list' : undefined}
-                  placeholder={formData.document_name === 'Thế chấp' ? "Nhập hoặc chọn Ngân hàng..." : "Bên Bán / Bên Tặng Cho..."} 
-                  value={formData.customer_a} 
-                  onChange={handleChange} 
-                  className="w-full border border-gray-300 rounded p-2 text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none" 
-                />
-                {/* Danh sách Datalist ngầm: Chỉ kích hoạt khi chọn Thế chấp */}
-                {formData.document_name === 'Thế chấp' && (
-                  <datalist id="bank-list">
-                    {BANKS.map(bank => <option key={bank} value={bank} />)}
-                  </datalist>
-                )}
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1 uppercase">Khách Hàng B</label>
-                <input name="customer_b" type="text" placeholder="Bên Mua / Bên Nhận..." value={formData.customer_b} onChange={handleChange} className="w-full border border-gray-300 rounded p-2 text-sm" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1 uppercase">Tóm tắt nội dung</label>
-                <input name="content" type="text" placeholder="Thửa đất số..." value={formData.content} onChange={handleChange} className="w-full border border-gray-300 rounded p-2 text-sm" />
-              </div>
-            </div>
-
-            {/* Cột 3 */}
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1 uppercase">NV Soạn Thảo</label>
-                <select name="drafter" value={formData.drafter} onChange={handleChange} className="w-full border border-gray-300 rounded p-2 text-sm bg-white">
-                  <option value="">-- Chọn NV --</option>
-                  {DRAFTERS.map(d => <option key={d} value={d}>{d}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1 uppercase">NV Photo & Trình Ký</label>
-                <select name="clerk" value={formData.clerk} onChange={handleChange} className="w-full border border-gray-300 rounded p-2 text-sm bg-white">
-                  <option value="">-- Chọn NV --</option>
-                  {CLERKS.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1 uppercase">Ghi chú</label>
-                <input name="note" type="text" placeholder="Lưu ý thêm..." value={formData.note} onChange={handleChange} className="w-full border border-gray-300 rounded p-2 text-sm" />
-              </div>
-            </div>
-
-            <div className="md:col-span-3 flex justify-end gap-3 mt-4 pt-4 border-t">
-              {editingId && (
-                <button type="button" onClick={handleCancelEdit} className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold px-6 py-2 rounded-md text-sm transition">
-                  Hủy Sửa
-                </button>
-              )}
-              <button type="submit" className={`${editingId ? 'bg-amber-500 hover:bg-amber-600' : 'bg-blue-600 hover:bg-blue-700'} text-white font-bold px-8 py-2 rounded-md text-sm transition shadow-sm`}>
-                {editingId ? 'LƯU CẬP NHẬT' : '🚀 TẠO HỒ SƠ'}
+        {/* BẢNG NHẬP LIỆU (CHỈ HIỆN KHI isFormOpen === true) */}
+        {isFormOpen && (
+          <div className={`p-6 rounded-xl shadow-sm border ${editingId ? 'bg-yellow-50 border-yellow-300' : 'bg-white border-gray-200'} animate-fadeIn`}>
+            <div className="flex justify-between items-center mb-5">
+              <h2 className="text-lg font-bold text-gray-700">
+                {editingId ? '✏️ Cập Nhật Thông Tin Hồ Sơ' : '📄 Khởi Tạo Hồ Sơ Mới'}
+              </h2>
+              {/* Nút X trên góc để đóng form nhanh */}
+              <button onClick={handleCloseForm} className="text-gray-400 hover:text-red-500 transition">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
-          </form>
-        </div>
+
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              
+              {/* Cột 1 */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1 uppercase">Loại Hồ Sơ</label>
+                  <select name="document_name" value={formData.document_name} onChange={handleChange} className="w-full border border-gray-300 rounded p-2 text-sm bg-white">
+                    <option value="">-- Chọn loại --</option>
+                    {DOC_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1 uppercase">Công Chứng Viên</label>
+                  <select name="notary_public" value={formData.notary_public} onChange={handleChange} className="w-full border border-gray-300 rounded p-2 text-sm bg-white">
+                    <option value="">-- Chọn CCV --</option>
+                    {NOTARIES.map(n => <option key={n} value={n}>{n}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1 uppercase">Trạng Thái Hồ Sơ</label>
+                  <select name="status" value={formData.status} onChange={handleChange} className="w-full border border-gray-300 rounded p-2 text-sm bg-white font-semibold text-gray-700">
+                    {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              {/* Cột 2 */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1 uppercase">Khách Hàng A</label>
+                  <input 
+                    name="customer_a" 
+                    type="text" 
+                    list={formData.document_name === 'Thế chấp' ? 'bank-list' : undefined}
+                    placeholder={formData.document_name === 'Thế chấp' ? "Nhập hoặc chọn Ngân hàng..." : "Bên Bán / Bên Tặng Cho..."} 
+                    value={formData.customer_a} 
+                    onChange={handleChange} 
+                    className="w-full border border-gray-300 rounded p-2 text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none" 
+                  />
+                  {formData.document_name === 'Thế chấp' && (
+                    <datalist id="bank-list">
+                      {BANKS.map(bank => <option key={bank} value={bank} />)}
+                    </datalist>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1 uppercase">Khách Hàng B</label>
+                  <input name="customer_b" type="text" placeholder="Bên Mua / Bên Nhận..." value={formData.customer_b} onChange={handleChange} className="w-full border border-gray-300 rounded p-2 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1 uppercase">Tóm tắt nội dung</label>
+                  <input name="content" type="text" placeholder="Thửa đất số..." value={formData.content} onChange={handleChange} className="w-full border border-gray-300 rounded p-2 text-sm" />
+                </div>
+              </div>
+
+              {/* Cột 3 */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1 uppercase">NV Soạn Thảo</label>
+                  <select name="drafter" value={formData.drafter} onChange={handleChange} className="w-full border border-gray-300 rounded p-2 text-sm bg-white">
+                    <option value="">-- Chọn NV --</option>
+                    {DRAFTERS.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1 uppercase">NV Photo & Trình Ký</label>
+                  <select name="clerk" value={formData.clerk} onChange={handleChange} className="w-full border border-gray-300 rounded p-2 text-sm bg-white">
+                    <option value="">-- Chọn NV --</option>
+                    {CLERKS.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1 uppercase">Ghi chú</label>
+                  <input name="note" type="text" placeholder="Lưu ý thêm..." value={formData.note} onChange={handleChange} className="w-full border border-gray-300 rounded p-2 text-sm" />
+                </div>
+              </div>
+
+              <div className="md:col-span-3 flex justify-end gap-3 mt-4 pt-4 border-t">
+                {/* Đóng form kể cả khi đang tạo mới hay sửa */}
+                <button type="button" onClick={handleCloseForm} className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold px-6 py-2 rounded-md text-sm transition">
+                  Đóng / Hủy
+                </button>
+                <button type="submit" className={`${editingId ? 'bg-amber-500 hover:bg-amber-600' : 'bg-blue-600 hover:bg-blue-700'} text-white font-bold px-8 py-2 rounded-md text-sm transition shadow-sm`}>
+                  {editingId ? 'LƯU CẬP NHẬT' : '🚀 TẠO HỒ SƠ'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
 
         {/* BẢNG THEO DÕI */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
