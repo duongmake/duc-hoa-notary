@@ -1,6 +1,6 @@
 'use client';
 import useSWR from 'swr';
-import { useEffect, useState, useRef } from 'react'; // Thêm useRef
+import { useEffect, useState, useRef } from 'react'; 
 
 // Gắn thêm timestamp để Tivi luôn hiểu đây là một yêu cầu mới, cấm lưu cache
 const fetcher = (url: string) => fetch(`${url}?t=${new Date().getTime()}`, { 
@@ -14,7 +14,7 @@ const fetcher = (url: string) => fetch(`${url}?t=${new Date().getTime()}`, {
 
 export default function TVDisplayPage() {
   const [currentTime, setCurrentTime] = useState('');
-  const scrollRef = useRef<HTMLDivElement>(null); // Dùng để điều khiển cuộn
+  const scrollRef = useRef<HTMLDivElement>(null); 
 
   // Cập nhật đồng hồ
   useEffect(() => {
@@ -41,34 +41,31 @@ export default function TVDisplayPage() {
     const el = scrollRef.current;
     if (!el) return;
 
-    let step = 1; // Tốc độ trượt (1 pixel mỗi nhịp)
-    let delay = 3000; // Dừng 3 giây ở đầu trang trước khi bắt đầu trượt
+    let step = 1; 
+    let delay = 3000; 
 
     const timer = setInterval(() => {
-      // Nếu danh sách ngắn, chưa tràn màn hình thì không cần trượt
       if (el.scrollHeight <= el.clientHeight) return;
 
       if (delay > 0) {
-        delay -= 20; // Đếm ngược thời gian chờ
+        delay -= 20; 
         return;
       }
 
       el.scrollTop += step;
 
-      // Khi trượt chạm đáy
       if (el.scrollTop + el.clientHeight >= el.scrollHeight - 1) {
-        step = -1; // Đổi chiều trượt ngược lên
-        delay = 3000; // Dừng lại 3 giây ở đáy cho khách đọc
+        step = -1; 
+        delay = 3000; 
       }
-      // Khi trượt ngược lại chạm đỉnh
       else if (el.scrollTop <= 0 && step === -1) {
-        step = 1; // Đổi chiều trượt xuống lại
-        delay = 3000; // Dừng lại 3 giây ở đỉnh
+        step = 1; 
+        delay = 3000; 
       }
-    }, 25); // Nhịp chạy 25ms (tạo cảm giác trượt cực mượt)
+    }, 25); 
 
     return () => clearInterval(timer);
-  }, [documents]); // Chạy lại hiệu ứng nếu có hồ sơ mới thêm vào
+  }, [documents]); 
 
   const getStatusColor = (status: string) => {
     if(status?.includes('1.')) return 'bg-gray-100 text-gray-700';
@@ -109,17 +106,14 @@ export default function TVDisplayPage() {
       <div className="p-6 flex-1 flex flex-col min-h-0">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex-1 flex flex-col relative">
           
-          {/* Vùng bọc danh sách có khả năng trượt (kèm CSS ẩn thanh cuộn) */}
           <div 
             ref={scrollRef} 
             className="flex-1 overflow-y-auto"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }} // Ẩn scrollbar trên Firefox & IE
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }} 
           >
-            {/* Thêm CSS ẩn thanh cuộn cho Chrome/Safari/Edge */}
             <style>{`div::-webkit-scrollbar { display: none; }`}</style>
             
             <table className="w-full text-sm text-left border-collapse bg-white">
-              {/* THEAD ĐƯỢC GHIM CỐ ĐỊNH (Sticky) */}
               <thead className="text-xs text-gray-600 uppercase bg-gray-50 border-b border-gray-200 sticky top-0 z-10 shadow-sm">
                 <tr>
                   <th className="px-6 py-4 w-28">Mã HS</th>
@@ -170,15 +164,11 @@ export default function TVDisplayPage() {
                       </div>
                     </td>
 
+                    {/* ĐÃ CHỈNH SỬA: Bỏ hoàn toàn phần hiển thị doc.note ở đây */}
                     <td className="px-6 py-5 align-top">
                       <div className={`rounded-lg px-4 py-3 text-center font-bold shadow-sm border ${getStatusColor(doc.status)}`}>
                           {doc.status}
                       </div>
-                      {doc.note && (
-                          <div className="text-xs text-gray-500 mt-2 italic text-center">
-                              "{doc.note}"
-                          </div>
-                      )}
                     </td>
 
                     <td className="px-6 py-5 text-right align-top">
