@@ -33,7 +33,7 @@ export default function TVDisplayPage() {
 
   const rawDocuments = responseData?.data || [];
   
-  // BỘ LỌC: Chỉ giữ lại các hồ sơ KHÔNG chứa trạng thái '8.'
+  // BỘ LỌC: Chỉ giữ lại các hồ sơ KHÔNG chứa trạng thái '9. Hoàn thành'
   const documents = rawDocuments.filter((doc: any) => !doc.status?.includes('9.'));
 
   // HIỆU ỨNG TỰ ĐỘNG TRƯỢT LÊN / TRƯỢT XUỐNG
@@ -74,9 +74,16 @@ export default function TVDisplayPage() {
     if(status?.includes('4.')) return 'bg-amber-50 text-amber-700';
     if(status?.includes('5.')) return 'bg-cyan-50 text-cyan-700 font-bold'; // 5. In lời chứng
     if(status?.includes('6.')) return 'bg-purple-50 text-purple-700'; // 6. CCV Ký
-    if(status?.includes('7.')) return 'bg-pink-50 text-pink-700'; // 7. Đóng dấu (Đã bổ sung)
+    if(status?.includes('7.')) return 'bg-pink-50 text-pink-700'; // 7. Đóng dấu 
     if(status?.includes('8.')) return 'bg-green-600 text-white font-bold animate-pulse shadow-md'; // 8. Thu phí gọi khách
     return 'bg-white';
+  };
+
+  // Hàm tự động cắt số thứ tự ở đầu trạng thái (VD: "1. Soạn thảo" -> "Soạn thảo")
+  const formatStatusForTV = (status: string) => {
+    if (!status) return '';
+    // Regex này sẽ tìm số, dấu chấm và khoảng trắng ở đầu câu để cắt bỏ
+    return status.replace(/^\d+\.\s*/, '');
   };
 
   return (
@@ -160,15 +167,15 @@ export default function TVDisplayPage() {
                         <span className="font-semibold text-gray-800">{doc.drafter || '-'}</span>
                       </div>
                       <div className="flex items-center text-sm">
-                        <span className="font-bold text-gray-400 w-12">Ký:</span> 
+                        <span className="font-bold text-gray-400 w-12">Photo:</span> 
                         <span className="font-semibold text-gray-800">{doc.clerk || '-'}</span>
                       </div>
                     </td>
 
-                    {/* ĐÃ CHỈNH SỬA: Bỏ hoàn toàn phần hiển thị doc.note ở đây */}
+                    {/* ĐÃ CHỈNH SỬA: Dùng hàm formatStatusForTV để ẩn số */}
                     <td className="px-6 py-5 align-top">
-                      <div className={`rounded-lg px-4 py-3 text-center font-bold shadow-sm border ${getStatusColor(doc.status)}`}>
-                          {doc.status}
+                      <div className={`rounded-lg px-4 py-3 text-center font-bold shadow-sm border ${getStatusColor(doc.status)} uppercase tracking-wide`}>
+                          {formatStatusForTV(doc.status)}
                       </div>
                     </td>
 
@@ -187,10 +194,10 @@ export default function TVDisplayPage() {
           </div>
         </div>
         
-        {/* FOOTER */}
+        {/* ĐÃ CHỈNH SỬA FOOTER: Không dùng "số 7" nữa mà ghi rõ tên trạng thái */}
         <div className="mt-4 flex justify-between items-center text-gray-500 text-xs font-medium px-2">
             <div>© Văn Phòng Công Chứng Đức Hòa - Hệ thống theo dõi hồ sơ tự động</div>
-            <div>Vui lòng liên hệ quầy thu phí nếu hồ sơ của quý khách đã ở trạng thái số 7</div>
+            <div>Vui lòng liên hệ quầy thu phí nếu hồ sơ của quý khách đã ở trạng thái <span className="font-bold text-gray-700 uppercase">Thu phí và trả hồ sơ</span></div>
         </div>
       </div>
     </div>
