@@ -199,7 +199,7 @@ export default function PersonalReportPage() {
                       <td className="px-4 py-4 text-xs space-y-1">
                         <div><span className="font-bold text-gray-400">CCV:</span> <span className="font-semibold text-blue-700">{doc.notary_public || '-'}</span></div>
                         <div><span className="font-bold text-gray-400">Soạn:</span> <span className="font-medium text-gray-800">{doc.drafter || '-'}</span></div>
-                        <div><span className="font-bold text-gray-400">Trình:</span> <span className="font-medium text-gray-800">{doc.clerk || '-'}</span></div>
+                        <div><span className="font-bold text-gray-400">Photo:</span> <span className="font-medium text-gray-800">{doc.clerk || '-'}</span></div>
                       </td>
 
                       <td className="px-4 py-4 space-y-1.5">

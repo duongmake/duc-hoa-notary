@@ -8,8 +8,6 @@ const NOTARIES = ['Trần Văn Châu', 'Lê Văn Giúp', 'Trần Thanh Vũ'];
 const DOC_TYPES = ['Chuyển nhượng - Mua bán', 'Tặng cho', 'Thuê - Mượn', 'Thế chấp', 'Cầm cố', 'Bảo lãnh', 'Ủy quyền', 'Chuyển đổi - Trao đổi', 'Góp vốn', 'Di chúc', 'Thừa kế', 'Tài sản vợ chồng', 'Vay', 'Giao dịch khác'];
 const DRAFTERS = ['Lê Trần Thiện Toàn', 'Trần Quỳnh Hương', 'Nguyễn Thị Kim Thoa', 'Trần Hồng Ngọc', 'Nguyễn Thị Thu Thủy', 'Trần Lệ Xuân', 'Nguyễn Tâm Lý Em', 'Phạm Tiến Dương'];
 const CLERKS = ['Trần Văn Hòa', 'Nguyễn Văn Nhanh', 'Trần Văn Khanh', 'Ngô Ngọc Toàn', 'Trần Trường Huy', 'Hà Thanh Tùng','Lê Trần Thiện Thắng', 'Trần Lệ Xuân'];
-
-// ĐÃ SỬA: Chèn trạng thái 5 và đẩy các số sau lên
 const STATUSES = [
   '1. Tiếp nhận yêu cầu', '2. Soạn thảo', '3. Photo', 
   '4. Khách ký', '5. In lời chứng', '6. Công chứng viên ký', '7. Đóng dấu', '8. Thu phí và trả hồ sơ', '9. Hoàn thành'
@@ -111,6 +109,15 @@ export default function AdminPage() {
     mutate();
   };
 
+  // ĐÃ THÊM: Hàm xử lý nút "Chuyển bước nhanh"
+  const handleNextStatus = (doc: any) => {
+    const currentIndex = STATUSES.indexOf(doc.status);
+    if (currentIndex !== -1 && currentIndex < STATUSES.length - 1) {
+      const nextStatus = STATUSES[currentIndex + 1];
+      handleQuickStatusChange(doc.id, doc.note, nextStatus);
+    }
+  };
+
   const handleQuickNoteChange = async (id: any, currentStatus: any, newNote: any) => {
     await fetch('/api/admin/documents', {
       method: 'PUT',
@@ -120,17 +127,16 @@ export default function AdminPage() {
     mutate();
   };
 
-  // ĐÃ SỬA: Cập nhật lại màu sắc cho khớp với thứ tự mới
   const getStatusColor = (status: any) => {
     if(status?.includes('1.')) return 'bg-gray-100 text-gray-700';
     if(status?.includes('2.')) return 'bg-blue-50 text-blue-700';
     if(status?.includes('3.')) return 'bg-indigo-50 text-indigo-700';
     if(status?.includes('4.')) return 'bg-amber-50 text-amber-700';
-    if(status?.includes('5.')) return 'bg-cyan-50 text-cyan-700 font-bold'; // In lời chứng
-    if(status?.includes('6.')) return 'bg-purple-50 text-purple-700'; // CCV Ký
-    if(status?.includes('7.')) return 'bg-pink-50 text-pink-700'; // Đóng dấu
-    if(status?.includes('8.')) return 'bg-green-100 text-green-800 font-bold'; // Thu phí
-    if(status?.includes('9.')) return 'bg-gray-300 text-gray-600 font-bold'; // Hoàn thành
+    if(status?.includes('5.')) return 'bg-cyan-50 text-cyan-700 font-bold';
+    if(status?.includes('6.')) return 'bg-purple-50 text-purple-700';
+    if(status?.includes('7.')) return 'bg-pink-50 text-pink-700';
+    if(status?.includes('8.')) return 'bg-green-100 text-green-800 font-bold';
+    if(status?.includes('9.')) return 'bg-gray-300 text-gray-600 font-bold';
     return 'bg-white';
   };
 
@@ -279,7 +285,7 @@ export default function AdminPage() {
                   <th className="px-4 py-4 w-24">Mã HS</th>
                   <th className="px-4 py-4">Khách Hàng / Nội Dung</th>
                   <th className="px-4 py-4">Phụ Trách</th>
-                  <th className="px-4 py-4 w-48">Tiến Độ & Ghi Chú</th>
+                  <th className="px-4 py-4 w-56">Tiến Độ & Ghi Chú</th>
                   <th className="px-4 py-4 w-28">Thời Gian</th>
                   <th className="px-4 py-4 text-center w-32">Xử Lý</th>
                 </tr>
@@ -327,13 +333,30 @@ export default function AdminPage() {
                     </td>
 
                     <td className="px-4 py-4">
-                      <select
-                        value={doc.status}
-                        onChange={(e) => handleQuickStatusChange(doc.id, doc.note, e.target.value)}
-                        className={`w-full border rounded p-1 mb-2 font-semibold text-xs focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer ${getStatusColor(doc.status)}`}
-                      >
-                        {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
-                      </select>
+                      {/* ĐÃ THÊM: Flexbox chứa Menu trạng thái và Nút chuyển tiếp */}
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <select
+                          value={doc.status}
+                          onChange={(e) => handleQuickStatusChange(doc.id, doc.note, e.target.value)}
+                          className={`flex-1 border rounded p-1 font-semibold text-xs focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer ${getStatusColor(doc.status)}`}
+                        >
+                          {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+
+                        {/* Nút bấm chuyển nhanh (Ẩn đi nếu đã ở bước cuối cùng) */}
+                        {STATUSES.indexOf(doc.status) < STATUSES.length - 1 && (
+                          <button
+                            onClick={() => handleNextStatus(doc)}
+                            title="Chuyển sang bước tiếp theo"
+                            className="bg-blue-100 hover:bg-blue-600 text-blue-700 hover:text-white px-2.5 py-1.5 rounded transition-colors shadow-sm flex items-center justify-center border border-blue-200 hover:border-blue-600 shrink-0"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+
                       <input 
                         type="text"
                         defaultValue={doc.note || ''}
