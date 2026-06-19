@@ -61,7 +61,7 @@ export default function PersonalReportPage() {
         'NHÂN VIÊN PHOTO/TRÌNH KÝ': doc.clerk || '-',
         'TIẾN ĐỘ HIỆN TẠI': doc.status,
         'GHI CHÚ VĂN PHÒNG': doc.note || '-',
-        'THÀNH TIỀN (VND)': doc.total_amount || 0, // Đã bổ sung thuộc tính này vào Excel
+        'THÀNH TIỀN (VND)': doc.total_amount || 0,
         'THỜI GIAN TIẾP NHẬN': doc.created_at ? new Date(doc.created_at).toLocaleString('vi-VN') : 'Chưa ghi nhận',
         'CẬP NHẬT CUỐI CÙNG': doc.updated_at ? new Date(doc.updated_at).toLocaleString('vi-VN') : 'Chưa ghi nhận',
         'THỜI GIAN HOÀN THÀNH': doc.completed_at ? new Date(doc.completed_at).toLocaleString('vi-VN') : 'Chưa hoàn thành',
@@ -136,13 +136,13 @@ export default function PersonalReportPage() {
           <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
             <span className="text-xs font-bold text-blue-400 uppercase">Đang tiến hành</span>
             <div className="text-2xl font-black text-blue-700 mt-1">
-              {documents.filter((d: any) => !d.status?.includes('8.')).length}
+              {documents.filter((d: any) => !d.status?.includes('9.')).length}
             </div>
           </div>
           <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
             <span className="text-xs font-bold text-green-400 uppercase">Đã hoàn thành lưu kho</span>
             <div className="text-2xl font-black text-green-700 mt-1">
-              {documents.filter((d: any) => d.status?.includes('8.')).length}
+              {documents.filter((d: any) => d.status?.includes('9.')).length}
             </div>
           </div>
           {/* HỘP HIỂN THỊ TỔNG DOANH THU */}
@@ -165,7 +165,6 @@ export default function PersonalReportPage() {
                   <th className="px-4 py-4 w-40">Nhiệm Vụ</th>
                   <th className="px-4 py-4 w-44">Phụ Trách</th>
                   <th className="px-4 py-4 w-48">Tiến Độ & Ghi Chú</th>
-                  {/* CỘT THÀNH TIỀN MỚI */}
                   <th className="px-4 py-4 w-40 text-center bg-amber-50/40">Thành Tiền (VND)</th>
                   <th className="px-4 py-4 w-32">Khởi Tạo</th>
                   <th className="px-4 py-4 w-32">Cập Nhật</th>
@@ -196,9 +195,11 @@ export default function PersonalReportPage() {
                         {doc.content && <p className="text-xs text-gray-500 italic pl-1 border-l border-gray-200 line-clamp-1">{doc.content}</p>}
                       </td>
 
+                      {/* ĐÃ SỬA: Đưa lại thông tin người Photo / Trình ký vào đây */}
                       <td className="px-4 py-4 text-xs space-y-1">
                         <div><span className="font-bold text-gray-400">CCV:</span> <span className="font-semibold text-blue-700">{doc.notary_public || '-'}</span></div>
                         <div><span className="font-bold text-gray-400">Soạn:</span> <span className="font-medium text-gray-800">{doc.drafter || '-'}</span></div>
+                        <div><span className="font-bold text-gray-400">Trình:</span> <span className="font-medium text-gray-800">{doc.clerk || '-'}</span></div>
                       </td>
 
                       <td className="px-4 py-4 space-y-1.5">
@@ -206,7 +207,6 @@ export default function PersonalReportPage() {
                         {doc.note && <p className="text-xs font-medium text-gray-600 bg-gray-50 p-1 rounded border border-gray-100 line-clamp-1">{doc.note}</p>}
                       </td>
 
-                      {/* Ô Ô NHẬP LIỆU SỐ TIỀN THU ĐƯỢC CỦA TỪNG HỒ SƠ */}
                       <td className="px-4 py-4 bg-amber-50/10">
                         <input 
                           type="number"

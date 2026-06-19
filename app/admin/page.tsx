@@ -321,7 +321,7 @@ export default function AdminPage() {
                         <span className="font-semibold text-gray-800">{doc.drafter || '-'}</span>
                       </div>
                       <div className="flex items-center text-sm">
-                        <span className="font-bold text-gray-400 w-12">Ký:</span> 
+                        <span className="font-bold text-gray-400 w-12">Photo:</span> 
                         <span className="font-semibold text-gray-800">{doc.clerk || '-'}</span>
                       </div>
                     </td>
