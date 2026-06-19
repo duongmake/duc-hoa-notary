@@ -87,7 +87,7 @@ export async function PUT(request) {
       await sql`
         UPDATE documents 
         SET status = ${status}, note = ${note}, updated_at = NOW(),
-            completed_at = CASE WHEN ${status} = '8. Hoàn thành' THEN COALESCE(completed_at, NOW()) ELSE NULL END
+            completed_at = CASE WHEN ${status} = '9. Hoàn thành' THEN COALESCE(completed_at, NOW()) ELSE NULL END
         WHERE id = ${id}
       `;
     }

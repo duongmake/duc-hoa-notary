@@ -87,8 +87,8 @@ export default function PersonalReportPage() {
   };
 
   const getStatusBadge = (status: string) => {
-    if(status?.includes('8.')) return 'bg-gray-100 text-gray-600 border-gray-300';
-    if(status?.includes('7.')) return 'bg-green-50 text-green-700 border-green-200';
+    if(status?.includes('9.')) return 'bg-gray-100 text-gray-600 border-gray-300';
+    if(status?.includes('8.')) return 'bg-green-50 text-green-700 border-green-200';
     return 'bg-blue-50 text-blue-700 border-blue-200';
   };
 

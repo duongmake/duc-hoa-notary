@@ -34,7 +34,7 @@ export default function TVDisplayPage() {
   const rawDocuments = responseData?.data || [];
   
   // BỘ LỌC: Chỉ giữ lại các hồ sơ KHÔNG chứa trạng thái '8.'
-  const documents = rawDocuments.filter((doc: any) => !doc.status?.includes('8.'));
+  const documents = rawDocuments.filter((doc: any) => !doc.status?.includes('9.'));
 
   // HIỆU ỨNG TỰ ĐỘNG TRƯỢT LÊN / TRƯỢT XUỐNG
   useEffect(() => {
@@ -72,9 +72,10 @@ export default function TVDisplayPage() {
     if(status?.includes('2.')) return 'bg-blue-50 text-blue-700';
     if(status?.includes('3.')) return 'bg-indigo-50 text-indigo-700';
     if(status?.includes('4.')) return 'bg-amber-50 text-amber-700';
-    if(status?.includes('5.')) return 'bg-purple-50 text-purple-700';
-    if(status?.includes('6.')) return 'bg-pink-50 text-pink-700';
-    if(status?.includes('7.')) return 'bg-green-600 text-white font-bold animate-pulse';
+    if(status?.includes('5.')) return 'bg-cyan-50 text-cyan-700 font-bold'; // 5. In lời chứng
+    if(status?.includes('6.')) return 'bg-purple-50 text-purple-700'; // 6. CCV Ký
+    if(status?.includes('7.')) return 'bg-pink-50 text-pink-700'; // 7. Đóng dấu (Đã bổ sung)
+    if(status?.includes('8.')) return 'bg-green-600 text-white font-bold animate-pulse shadow-md'; // 8. Thu phí gọi khách
     return 'bg-white';
   };
 

@@ -8,9 +8,11 @@ const NOTARIES = ['Trần Văn Châu', 'Lê Văn Giúp', 'Trần Thanh Vũ'];
 const DOC_TYPES = ['Chuyển nhượng - Mua bán', 'Tặng cho', 'Thuê - Mượn', 'Thế chấp', 'Cầm cố', 'Bảo lãnh', 'Ủy quyền', 'Chuyển đổi - Trao đổi', 'Góp vốn', 'Di chúc', 'Thừa kế', 'Tài sản vợ chồng', 'Vay', 'Giao dịch khác'];
 const DRAFTERS = ['Lê Trần Thiện Toàn', 'Trần Quỳnh Hương', 'Nguyễn Thị Kim Thoa', 'Trần Hồng Ngọc', 'Nguyễn Thị Thu Thủy', 'Trần Lệ Xuân', 'Nguyễn Tâm Lý Em', 'Phạm Tiến Dương'];
 const CLERKS = ['Trần Văn Hòa', 'Nguyễn Văn Nhanh', 'Trần Văn Khanh', 'Ngô Ngọc Toàn', 'Trần Trường Huy', 'Hà Thanh Tùng','Lê Trần Thiện Thắng', 'Trần Lệ Xuân'];
+
+// ĐÃ SỬA: Chèn trạng thái 5 và đẩy các số sau lên
 const STATUSES = [
   '1. Tiếp nhận yêu cầu', '2. Soạn thảo', '3. Photo', 
-  '4. Khách ký', '5. Công chứng viên ký', '6. Đóng dấu', '7. Thu phí và trả hồ sơ', '8. Hoàn thành'
+  '4. Khách ký', '5. In lời chứng', '6. Công chứng viên ký', '7. Đóng dấu', '8. Thu phí và trả hồ sơ', '9. Hoàn thành'
 ];
 
 const BANKS = [
@@ -27,8 +29,6 @@ export default function AdminPage() {
   });
   const [message, setMessage] = useState({ type: '', text: '' });
   const [editingId, setEditingId] = useState<any>(null); 
-  
-  // ĐÃ THÊM: Trạng thái đóng/mở form nhập liệu
   const [isFormOpen, setIsFormOpen] = useState(false);
 
   const { data: responseData, mutate } = useSWR('/api/admin/documents', fetcher, {
@@ -55,14 +55,13 @@ export default function AdminPage() {
 
     if (res.ok) {
       setMessage({ type: 'success', text: editingId ? 'Cập nhật thành công!' : 'Tạo hồ sơ thành công!' });
-      handleCloseForm(); // Tự động đóng form khi lưu thành công
+      handleCloseForm(); 
       mutate(); 
     } else {
       setMessage({ type: 'error', text: data.error || 'Có lỗi xảy ra.' });
     }
   };
 
-  // ĐÃ THÊM: Hàm mở form khi bấm Tạo mới
   const handleOpenCreateForm = () => {
     setEditingId(null);
     setFormData({ 
@@ -82,11 +81,10 @@ export default function AdminPage() {
       note: doc.note || '', drafter: doc.drafter || '', clerk: doc.clerk || '',
       status: doc.status || '1. Tiếp nhận yêu cầu' 
     });
-    setIsFormOpen(true); // Bật form lên khi bấm Sửa
+    setIsFormOpen(true); 
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // ĐÃ SỬA: Hàm đóng form và reset dữ liệu
   const handleCloseForm = () => {
     setIsFormOpen(false);
     setEditingId(null);
@@ -122,15 +120,17 @@ export default function AdminPage() {
     mutate();
   };
 
+  // ĐÃ SỬA: Cập nhật lại màu sắc cho khớp với thứ tự mới
   const getStatusColor = (status: any) => {
     if(status?.includes('1.')) return 'bg-gray-100 text-gray-700';
     if(status?.includes('2.')) return 'bg-blue-50 text-blue-700';
     if(status?.includes('3.')) return 'bg-indigo-50 text-indigo-700';
     if(status?.includes('4.')) return 'bg-amber-50 text-amber-700';
-    if(status?.includes('5.')) return 'bg-purple-50 text-purple-700';
-    if(status?.includes('6.')) return 'bg-pink-50 text-pink-700';
-    if(status?.includes('7.')) return 'bg-green-100 text-green-800 font-bold';
-    if(status?.includes('8.')) return 'bg-gray-300 text-gray-600 font-bold';
+    if(status?.includes('5.')) return 'bg-cyan-50 text-cyan-700 font-bold'; // In lời chứng
+    if(status?.includes('6.')) return 'bg-purple-50 text-purple-700'; // CCV Ký
+    if(status?.includes('7.')) return 'bg-pink-50 text-pink-700'; // Đóng dấu
+    if(status?.includes('8.')) return 'bg-green-100 text-green-800 font-bold'; // Thu phí
+    if(status?.includes('9.')) return 'bg-gray-300 text-gray-600 font-bold'; // Hoàn thành
     return 'bg-white';
   };
 
@@ -147,7 +147,6 @@ export default function AdminPage() {
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Đồng bộ Real-time
             </span>
             
-            {/* ĐÃ THÊM: Nút mở form tạo mới. Sẽ ẩn đi nếu form đang mở để tránh bấm trùng */}
             {!isFormOpen && (
               <button 
                 onClick={handleOpenCreateForm}
@@ -168,14 +167,13 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* BẢNG NHẬP LIỆU (CHỈ HIỆN KHI isFormOpen === true) */}
+        {/* BẢNG NHẬP LIỆU */}
         {isFormOpen && (
           <div className={`p-6 rounded-xl shadow-sm border ${editingId ? 'bg-yellow-50 border-yellow-300' : 'bg-white border-gray-200'} animate-fadeIn`}>
             <div className="flex justify-between items-center mb-5">
               <h2 className="text-lg font-bold text-gray-700">
                 {editingId ? '✏️ Cập Nhật Thông Tin Hồ Sơ' : '📄 Khởi Tạo Hồ Sơ Mới'}
               </h2>
-              {/* Nút X trên góc để đóng form nhanh */}
               <button onClick={handleCloseForm} className="text-gray-400 hover:text-red-500 transition">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -261,7 +259,6 @@ export default function AdminPage() {
               </div>
 
               <div className="md:col-span-3 flex justify-end gap-3 mt-4 pt-4 border-t">
-                {/* Đóng form kể cả khi đang tạo mới hay sửa */}
                 <button type="button" onClick={handleCloseForm} className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold px-6 py-2 rounded-md text-sm transition">
                   Đóng / Hủy
                 </button>
