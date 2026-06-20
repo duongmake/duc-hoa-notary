@@ -102,6 +102,15 @@ export async function DELETE(request) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
+    const deleteAll = searchParams.get('deleteAll');
+
+    // 1. NHÁNH MỚI: Nếu có lệnh xóa toàn bộ
+    if (deleteAll === 'true') {
+      await sql`DELETE FROM documents`;
+      return NextResponse.json({ success: true, message: "Đã dọn dẹp toàn bộ cơ sở dữ liệu!" });
+    }
+
+    // 2. NHÁNH CŨ: Xóa từng hồ sơ đơn lẻ
     if (!id) return NextResponse.json({ success: false, error: "Thiếu ID" }, { status: 400 });
     await sql`DELETE FROM documents WHERE id = ${id}`;
     return NextResponse.json({ success: true, message: "Xóa thành công!" });

@@ -23,7 +23,7 @@ export default function PersonalReportPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, total_amount: newAmount }),
     });
-    mutate(); // Đồng bộ lại số liệu ngay lập tức
+    mutate(); 
   };
 
   const formatDateTime = (dateTimeString: string | null) => {
@@ -37,6 +37,39 @@ export default function PersonalReportPage() {
         {d.toLocaleDateString('vi-VN')}
       </div>
     );
+  };
+
+  // ĐÃ THÊM: HÀM XÓA TOÀN BỘ DỮ LIỆU CÓ KHÓA AN TOÀN
+  const handleDeleteAllData = async () => {
+    if (documents.length === 0) {
+      alert("Cơ sở dữ liệu đang trống, không có gì để xóa!");
+      return;
+    }
+
+    // Xác nhận lớp 1
+    const confirm1 = window.confirm("⚠️ CẢNH BÁO NGUY HIỂM TỐI ĐA ⚠️\n\nBạn có chắc chắn muốn XÓA VĨNH VIỄN TOÀN BỘ dữ liệu hồ sơ không?\nHành động này không thể khôi phục lại được!");
+    if (!confirm1) return;
+
+    // Xác nhận lớp 2 (Bắt gõ phím)
+    const confirm2 = window.prompt("Để xác nhận quyền Admin, vui lòng gõ chữ XOA vào ô bên dưới:");
+    if (confirm2 !== 'XOA') {
+      alert("Sai mã xác nhận. Đã hủy lệnh xóa toàn bộ!");
+      return;
+    }
+
+    // Tiến hành gọi API xóa
+    try {
+      const res = await fetch('/api/admin/documents?deleteAll=true', { method: 'DELETE' });
+      if (res.ok) {
+        alert("Đã dọn sạch toàn bộ dữ liệu hệ thống!");
+        mutate(); // Tải lại bảng trắng
+      } else {
+        alert("Có lỗi xảy ra khi dọn dẹp dữ liệu.");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Lỗi kết nối đến máy chủ.");
+    }
   };
 
   // XUẤT EXCEL CÓ THÀNH TIỀN
@@ -107,22 +140,35 @@ export default function PersonalReportPage() {
             </p>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+            
+            {/* NÚT XÓA TOÀN BỘ DỮ LIỆU */}
+            <button
+              onClick={handleDeleteAllData}
+              className="flex items-center gap-1.5 text-xs font-bold text-white bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg shadow-sm border border-red-700 transition-all cursor-pointer"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Dọn Dẹp Dữ Liệu
+            </button>
+
+            {/* NÚT XUẤT EXCEL */}
             <button
               onClick={handleExportExcel}
               disabled={isExporting}
-              className="flex items-center gap-2 text-xs font-bold text-white bg-green-600 hover:bg-green-700 disabled:bg-green-300 px-4 py-2 rounded-lg shadow-sm border border-green-700 transition-all cursor-pointer"
+              className="flex items-center gap-1.5 text-xs font-bold text-white bg-green-600 hover:bg-green-700 disabled:bg-green-300 px-4 py-2 rounded-lg shadow-sm border border-green-700 transition-all cursor-pointer"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              {isExporting ? 'Đang tạo file...' : 'Tải File Excel (.xlsx)'}
+              {isExporting ? 'Đang tạo file...' : 'Tải File Excel'}
             </button>
 
             <Link 
               href="/admin" 
               className="text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg border border-gray-300 transition-all"
             >
-              ← Quay lại trang Admin
+              ← Trở về Admin
             </Link>
           </div>
         </div>
@@ -195,7 +241,6 @@ export default function PersonalReportPage() {
                         {doc.content && <p className="text-xs text-gray-500 italic pl-1 border-l border-gray-200 line-clamp-1">{doc.content}</p>}
                       </td>
 
-                      {/* ĐÃ SỬA: Đưa lại thông tin người Photo / Trình ký vào đây */}
                       <td className="px-4 py-4 text-xs space-y-1">
                         <div><span className="font-bold text-gray-400">CCV:</span> <span className="font-semibold text-blue-700">{doc.notary_public || '-'}</span></div>
                         <div><span className="font-bold text-gray-400">Soạn:</span> <span className="font-medium text-gray-800">{doc.drafter || '-'}</span></div>
