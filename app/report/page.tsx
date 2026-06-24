@@ -1,11 +1,14 @@
 'use client';
 import useSWR from 'swr';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation'; // 1. ĐÃ THÊM import useRouter
 import Link from 'next/link';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function PersonalReportPage() {
+  const router = useRouter(); // 2. ĐÃ THÊM khai báo router
+
   const { data: responseData, mutate } = useSWR('/api/admin/documents', fetcher, {
     refreshInterval: 3000, 
   });
@@ -26,6 +29,12 @@ export default function PersonalReportPage() {
     mutate(); 
   };
 
+  // 3. ĐÃ THÊM: Hàm xử lý Đăng xuất (xóa Cookie và bẻ lái về login)
+  const handleLogout = () => {
+    document.cookie = "vpcc_auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    router.push('/login');
+  };
+
   const formatDateTime = (dateTimeString: string | null) => {
     if (!dateTimeString) return <span className="text-gray-400 italic">Chưa ghi nhận</span>;
     const d = new Date(dateTimeString);
@@ -39,30 +48,27 @@ export default function PersonalReportPage() {
     );
   };
 
-  // ĐÃ THÊM: HÀM XÓA TOÀN BỘ DỮ LIỆU CÓ KHÓA AN TOÀN
+  // HÀM XÓA TOÀN BỘ DỮ LIỆU CÓ KHÓA AN TOÀN
   const handleDeleteAllData = async () => {
     if (documents.length === 0) {
       alert("Cơ sở dữ liệu đang trống, không có gì để xóa!");
       return;
     }
 
-    // Xác nhận lớp 1
     const confirm1 = window.confirm("⚠️ CẢNH BÁO NGUY HIỂM TỐI ĐA ⚠️\n\nBạn có chắc chắn muốn XÓA VĨNH VIỄN TOÀN BỘ dữ liệu hồ sơ không?\nHành động này không thể khôi phục lại được!");
     if (!confirm1) return;
 
-    // Xác nhận lớp 2 (Bắt gõ phím)
     const confirm2 = window.prompt("Để xác nhận quyền Admin, vui lòng gõ chữ XOA vào ô bên dưới:");
     if (confirm2 !== 'XOA') {
       alert("Sai mã xác nhận. Đã hủy lệnh xóa toàn bộ!");
       return;
     }
 
-    // Tiến hành gọi API xóa
     try {
       const res = await fetch('/api/admin/documents?deleteAll=true', { method: 'DELETE' });
       if (res.ok) {
         alert("Đã dọn sạch toàn bộ dữ liệu hệ thống!");
-        mutate(); // Tải lại bảng trắng
+        mutate(); 
       } else {
         alert("Có lỗi xảy ra khi dọn dẹp dữ liệu.");
       }
@@ -170,6 +176,15 @@ export default function PersonalReportPage() {
             >
               ← Trở về Admin
             </Link>
+
+            {/* 4. ĐÃ THÊM: NÚT ĐĂNG XUẤT */}
+            <button
+              onClick={handleLogout}
+              className="text-xs font-bold text-white bg-slate-800 hover:bg-black px-4 py-2 rounded-lg shadow-sm border border-slate-900 transition-all cursor-pointer"
+            >
+              🔒 Đăng xuất
+            </button>
+
           </div>
         </div>
 
@@ -191,7 +206,6 @@ export default function PersonalReportPage() {
               {documents.filter((d: any) => d.status?.includes('9.')).length}
             </div>
           </div>
-          {/* HỘP HIỂN THỊ TỔNG DOANH THU */}
           <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-4 rounded-xl shadow-sm border border-amber-200">
             <span className="text-xs font-bold text-amber-600 uppercase">Tổng số tiền tổng hợp</span>
             <div className="text-2xl font-black text-amber-700 mt-1">
