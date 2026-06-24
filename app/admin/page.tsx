@@ -8,6 +8,7 @@ const NOTARIES = ['Trần Văn Châu', 'Lê Văn Giúp', 'Trần Thanh Vũ'];
 const DOC_TYPES = ['Chuyển nhượng - Mua bán', 'Tặng cho', 'Thuê - Mượn', 'Thế chấp', 'Cầm cố', 'Bảo lãnh', 'Ủy quyền', 'Chuyển đổi - Trao đổi', 'Góp vốn', 'Di chúc', 'Thừa kế', 'Tài sản vợ chồng', 'Vay', 'Giao dịch khác'];
 const DRAFTERS = ['Lê Trần Thiện Toàn', 'Trần Quỳnh Hương', 'Nguyễn Thị Kim Thoa', 'Trần Hồng Ngọc', 'Nguyễn Thị Thu Thủy', 'Trần Lệ Xuân', 'Nguyễn Tâm Lý Em', 'Phạm Tiến Dương'];
 const CLERKS = ['Trần Văn Hòa', 'Nguyễn Văn Nhanh', 'Trần Văn Khanh', 'Ngô Ngọc Toàn', 'Trần Trường Huy', 'Hà Thanh Tùng','Lê Trần Thiện Thắng', 'Trần Lệ Xuân'];
+
 const STATUSES = [
   '1. Tiếp nhận yêu cầu', '2. Soạn thảo', '3. Photo', 
   '4. Khách ký', '5. In lời chứng', '6. Công chứng viên ký', '7. Đóng dấu', '8. Thu phí và trả hồ sơ', '9. Hoàn thành'
@@ -33,7 +34,18 @@ export default function AdminPage() {
     refreshInterval: 2000, 
     revalidateOnFocus: true,
   });
-  const documents = responseData?.data || [];
+  
+  // ĐÃ CHỈNH SỬA LẠI LOGIC XUẤT DỮ LIỆU Ở ĐÂY
+  const rawDocuments = responseData?.data || [];
+  
+  // 1. Lọc ra những hồ sơ chưa hoàn thành
+  const activeDocs = rawDocuments.filter((doc: any) => !doc.status?.includes('9.'));
+  
+  // 2. Lọc ra những hồ sơ ĐÃ hoàn thành
+  const completedDocs = rawDocuments.filter((doc: any) => doc.status?.includes('9.'));
+  
+  // 3. Ghép nối lại: Hồ sơ chưa xong nằm trên, hồ sơ đã xong nằm dưới cùng
+  const documents = [...activeDocs, ...completedDocs];
 
   const handleChange = (e: any) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
@@ -109,7 +121,6 @@ export default function AdminPage() {
     mutate();
   };
 
-  // ĐÃ THÊM: Hàm xử lý nút "Chuyển bước nhanh"
   const handleNextStatus = (doc: any) => {
     const currentIndex = STATUSES.indexOf(doc.status);
     if (currentIndex !== -1 && currentIndex < STATUSES.length - 1) {
@@ -294,7 +305,7 @@ export default function AdminPage() {
                 {!responseData ? (
                   <tr><td colSpan={6} className="text-center py-8">Đang đồng bộ...</td></tr>
                 ) : documents.map((doc: any) => (
-                  <tr key={doc.id} className="hover:bg-blue-50/50 transition">
+                  <tr key={doc.id} className={`hover:bg-blue-50/50 transition ${doc.status?.includes('9.') ? 'opacity-60 bg-gray-50' : ''}`}>
                     <td className="px-4 py-4 font-black text-gray-800">{doc.code}</td>
                     
                     <td className="px-4 py-4 space-y-1.5">
@@ -333,7 +344,6 @@ export default function AdminPage() {
                     </td>
 
                     <td className="px-4 py-4">
-                      {/* ĐÃ THÊM: Flexbox chứa Menu trạng thái và Nút chuyển tiếp */}
                       <div className="flex items-center gap-1.5 mb-2">
                         <select
                           value={doc.status}
@@ -343,7 +353,6 @@ export default function AdminPage() {
                           {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
 
-                        {/* Nút bấm chuyển nhanh (Ẩn đi nếu đã ở bước cuối cùng) */}
                         {STATUSES.indexOf(doc.status) < STATUSES.length - 1 && (
                           <button
                             onClick={() => handleNextStatus(doc)}
