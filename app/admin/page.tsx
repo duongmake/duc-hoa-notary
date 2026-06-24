@@ -29,9 +29,9 @@ export default function AdminPage() {
   const [message, setMessage] = useState({ type: '', text: '' });
   const [editingId, setEditingId] = useState<any>(null); 
   const [isFormOpen, setIsFormOpen] = useState(false);
-  
-  // ĐÃ THÊM: State để lưu từ khóa tìm kiếm
   const [searchTerm, setSearchTerm] = useState('');
+  
+  const [sortConfig, setSortConfig] = useState<{key: string | null, direction: 'asc' | 'desc'}>({ key: null, direction: 'asc' });
 
   const { data: responseData, mutate } = useSWR('/api/admin/documents', fetcher, {
     refreshInterval: 2000, 
@@ -40,22 +40,43 @@ export default function AdminPage() {
   
   const rawDocuments = responseData?.data || [];
   
-  // ĐÃ THÊM: Bộ lọc tìm kiếm thông minh (Tìm theo Khách A, Khách B, Mã HS, Loại HS)
   const searchedDocs = rawDocuments.filter((doc: any) => {
-    if (!searchTerm) return true; // Nếu không gõ gì thì hiện tất cả
+    if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
     const customerA = (doc.customer_a || '').toLowerCase();
     const customerB = (doc.customer_b || '').toLowerCase();
     const code = (doc.code || '').toLowerCase();
     const docName = (doc.document_name || '').toLowerCase();
-    
     return customerA.includes(term) || customerB.includes(term) || code.includes(term) || docName.includes(term);
   });
   
-  // Áp dụng thuật toán sắp xếp: Đang xử lý nằm trên, Đã hoàn thành nằm dưới
-  const activeDocs = searchedDocs.filter((doc: any) => !doc.status?.includes('9.'));
-  const completedDocs = searchedDocs.filter((doc: any) => doc.status?.includes('9.'));
-  const documents = [...activeDocs, ...completedDocs];
+  let documents = [...searchedDocs];
+  if (sortConfig.key) {
+    documents.sort((a, b) => {
+      const aVal = String(a[sortConfig.key!] || '').toLowerCase();
+      const bVal = String(b[sortConfig.key!] || '').toLowerCase();
+      
+      return sortConfig.direction === 'asc' 
+        ? aVal.localeCompare(bVal, undefined, { numeric: true })
+        : bVal.localeCompare(aVal, undefined, { numeric: true });
+    });
+  } else {
+    const activeDocs = documents.filter((doc: any) => !doc.status?.includes('9.'));
+    const completedDocs = documents.filter((doc: any) => doc.status?.includes('9.'));
+    documents = [...activeDocs, ...completedDocs];
+  }
+
+  const handleSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    if (sortConfig.key === key && sortConfig.direction === 'desc') {
+      setSortConfig({ key: null, direction: 'asc' });
+      return;
+    }
+    setSortConfig({ key, direction });
+  };
 
   const handleChange = (e: any) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
@@ -161,6 +182,12 @@ export default function AdminPage() {
     return 'bg-white';
   };
 
+  // ĐÃ CHỈNH SỬA: Làm cho mũi tên mặc định đậm nét hơn (text-gray-400 và font-bold thay vì có opacity-50)
+  const renderSortIcon = (columnKey: string) => {
+    if (sortConfig.key !== columnKey) return <span className="text-gray-400 font-bold ml-1">↕</span>;
+    return sortConfig.direction === 'asc' ? <span className="text-blue-600 font-black ml-1">↑</span> : <span className="text-blue-600 font-black ml-1">↓</span>;
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 p-4 md:p-6 font-sans">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -171,7 +198,6 @@ export default function AdminPage() {
           
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
             
-            {/* ĐÃ THÊM: THANH TÌM KIẾM (SEARCH BAR) */}
             <div className="relative w-full sm:w-64 md:w-72">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -185,7 +211,6 @@ export default function AdminPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-9 pr-3 py-1.5 border border-gray-300 rounded-md text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm"
               />
-              {/* Nút xóa nhanh từ khóa */}
               {searchTerm && (
                 <button 
                   onClick={() => setSearchTerm('')}
@@ -199,7 +224,7 @@ export default function AdminPage() {
             </div>
 
             <span className="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1.5 rounded flex items-center justify-center gap-2 shadow-sm shrink-0">
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Đồng bộ Real-time
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Đồng bộ
             </span>
             
             {!isFormOpen && (
@@ -329,12 +354,29 @@ export default function AdminPage() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left align-top">
-              <thead className="text-xs text-gray-600 uppercase bg-gray-100 border-b">
+              <thead className="text-xs text-gray-600 uppercase bg-gray-100 border-b select-none">
                 <tr>
-                  <th className="px-4 py-4 w-24">Mã HS</th>
+                  <th 
+                    className="px-4 py-4 w-24 cursor-pointer hover:bg-gray-200 transition group"
+                    onClick={() => handleSort('code')}
+                  >
+                    <div className="flex items-center">
+                      Mã HS {renderSortIcon('code')}
+                    </div>
+                  </th>
+                  
                   <th className="px-4 py-4">Khách Hàng / Nội Dung</th>
                   <th className="px-4 py-4">Phụ Trách</th>
-                  <th className="px-4 py-4 w-56">Tiến Độ & Ghi Chú</th>
+                  
+                  <th 
+                    className="px-4 py-4 w-56 cursor-pointer hover:bg-gray-200 transition group"
+                    onClick={() => handleSort('status')}
+                  >
+                    <div className="flex items-center">
+                      Tiến Độ & Ghi Chú {renderSortIcon('status')}
+                    </div>
+                  </th>
+                  
                   <th className="px-4 py-4 w-28">Thời Gian</th>
                   <th className="px-4 py-4 text-center w-32">Xử Lý</th>
                 </tr>
