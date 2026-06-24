@@ -2,27 +2,53 @@
 import useSWR from 'swr';
 import { useEffect, useState, useRef } from 'react'; 
 
-// Gắn thêm timestamp để Tivi luôn hiểu đây là một yêu cầu mới, cấm lưu cache
-const fetcher = (url: string) => fetch(`${url}?t=${new Date().getTime()}`, { 
-  cache: 'no-store',
-  headers: {
-    'Cache-Control': 'no-cache, no-store, must-revalidate',
-    'Pragma': 'no-cache',
-    'Expires': '0'
-  }
-}).then((res) => res.json());
+// // Gắn thêm timestamp để Tivi luôn hiểu đây là một yêu cầu mới, cấm lưu cache
+// const fetcher = (url: string) => fetch(`${url}?t=${new Date().getTime()}`, { 
+//   cache: 'no-store',
+//   headers: {
+//     'Cache-Control': 'no-cache, no-store, must-revalidate',
+//     'Pragma': 'no-cache',
+//     'Expires': '0'
+//   }
+// }).then((res) => res.json());
+
+// 1. SỬA LẠI FETCHER: Ép xóa cache ở cấp độ trình duyệt trình duyệt TV
+const fetcher = (url: string) => 
+  fetch(`${url}?_t=${Date.now()}`, { // Thêm timestamp chống trùng lặp URL
+    headers: {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    }
+  }).then((res) => res.json());
+
+
+// export default function TVDisplayPage() {
+//   const [currentTime, setCurrentTime] = useState('');
+//   const scrollRef = useRef<HTMLDivElement>(null); 
+
+//   // Cập nhật đồng hồ
+//   useEffect(() => {
+//     const timer = setInterval(() => {
+//       setCurrentTime(new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }));
+//     }, 1000);
+//     return () => clearInterval(timer);
+//   }, []);
 
 export default function TVDisplayPage() {
-  const [currentTime, setCurrentTime] = useState('');
-  const scrollRef = useRef<HTMLDivElement>(null); 
+  // 2. CẤU HÌNH LẠI useSWR: Tối ưu riêng cho màn hình TV tĩnh
+  const { data: responseData } = useSWR('/api/admin/documents', fetcher, {
+    refreshInterval: 3000, 
+    refreshWhenHidden: true, // Ép chạy kể cả khi TV tưởng trang đang bị ẩn/tĩnh
+    revalidateOnFocus: false, // Tắt cái này vì TV không có thao tác click chuột ra/vào tab như máy tính
+    dedupingInterval: 0       // Tắt cơ chế gom cụm request của SWR
+  });
 
-  // Cập nhật đồng hồ
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
+  const documents = responseData?.data || [];
+  // ... các đoạn code hiển thị giao diện bên dưới giữ nguyên ...
+}
+
+
 
   const { data: responseData } = useSWR('/api/admin/documents', fetcher, {
     refreshInterval: 2000, 
