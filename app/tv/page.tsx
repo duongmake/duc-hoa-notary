@@ -2,19 +2,9 @@
 import useSWR from 'swr';
 import { useEffect, useState, useRef } from 'react'; 
 
-// // Gắn thêm timestamp để Tivi luôn hiểu đây là một yêu cầu mới, cấm lưu cache
-// const fetcher = (url: string) => fetch(`${url}?t=${new Date().getTime()}`, { 
-//   cache: 'no-store',
-//   headers: {
-//     'Cache-Control': 'no-cache, no-store, must-revalidate',
-//     'Pragma': 'no-cache',
-//     'Expires': '0'
-//   }
-// }).then((res) => res.json());
-
-// 1. SỬA LẠI FETCHER: Ép xóa cache ở cấp độ trình duyệt trình duyệt TV
+// 1. FETCHER CHỐNG CACHE: Ép Tivi luôn phải lên Server lấy dữ liệu mới
 const fetcher = (url: string) => 
-  fetch(`${url}?_t=${Date.now()}`, { // Thêm timestamp chống trùng lặp URL
+  fetch(`${url}?_t=${Date.now()}`, { 
     headers: {
       'Cache-Control': 'no-cache, no-store, must-revalidate',
       'Pragma': 'no-cache',
@@ -22,44 +12,38 @@ const fetcher = (url: string) =>
     }
   }).then((res) => res.json());
 
-
-// export default function TVDisplayPage() {
-//   const [currentTime, setCurrentTime] = useState('');
-//   const scrollRef = useRef<HTMLDivElement>(null); 
-
-//   // Cập nhật đồng hồ
-//   useEffect(() => {
-//     const timer = setInterval(() => {
-//       setCurrentTime(new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }));
-//     }, 1000);
-//     return () => clearInterval(timer);
-//   }, []);
-
 export default function TVDisplayPage() {
-  // 2. CẤU HÌNH LẠI useSWR: Tối ưu riêng cho màn hình TV tĩnh
+  const [currentTime, setCurrentTime] = useState('');
+  const scrollRef = useRef<HTMLDivElement>(null); 
+
+  // Cập nhật đồng hồ 1 giây / lần
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // 2. GIẢI PHÁP CHỐNG ĐỨNG HÌNH: Ép Tivi tự F5 tải lại toàn bộ web sau mỗi 5 phút
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      window.location.reload();
+    }, 300000); // 300.000 ms = 5 phút
+    return () => clearTimeout(timer);
+  }, []);
+
+  // 3. GỌI SWR (Chỉ gọi DUY NHẤT 1 lần với đầy đủ thông số tối ưu cho Tivi)
   const { data: responseData } = useSWR('/api/admin/documents', fetcher, {
     refreshInterval: 3000, 
-    refreshWhenHidden: true, // Ép chạy kể cả khi TV tưởng trang đang bị ẩn/tĩnh
-    revalidateOnFocus: false, // Tắt cái này vì TV không có thao tác click chuột ra/vào tab như máy tính
-    dedupingInterval: 0       // Tắt cơ chế gom cụm request của SWR
-  });
-
-  const documents = responseData?.data || [];
-  // ... các đoạn code hiển thị giao diện bên dưới giữ nguyên ...
-}
-
-
-
-  const { data: responseData } = useSWR('/api/admin/documents', fetcher, {
-    refreshInterval: 2000, 
-    refreshWhenHidden: true,
+    refreshWhenHidden: true, 
     refreshWhenOffline: true,
     revalidateOnFocus: false,
+    dedupingInterval: 0 
   });
 
   const rawDocuments = responseData?.data || [];
   
-  // BỘ LỌC: Chỉ giữ lại các hồ sơ KHÔNG chứa trạng thái '9. Hoàn thành'
+  // LỌC HỒ SƠ: Bỏ qua các hồ sơ đã ở mốc '9. Hoàn thành'
   const documents = rawDocuments.filter((doc: any) => !doc.status?.includes('9.'));
 
   // HIỆU ỨNG TỰ ĐỘNG TRƯỢT LÊN / TRƯỢT XUỐNG
@@ -98,17 +82,16 @@ export default function TVDisplayPage() {
     if(status?.includes('2.')) return 'bg-blue-50 text-blue-700';
     if(status?.includes('3.')) return 'bg-indigo-50 text-indigo-700';
     if(status?.includes('4.')) return 'bg-amber-50 text-amber-700';
-    if(status?.includes('5.')) return 'bg-cyan-50 text-cyan-700 font-bold'; // 5. In lời chứng
-    if(status?.includes('6.')) return 'bg-purple-50 text-purple-700'; // 6. CCV Ký
-    if(status?.includes('7.')) return 'bg-pink-50 text-pink-700'; // 7. Đóng dấu 
-    if(status?.includes('8.')) return 'bg-green-600 text-white font-bold animate-pulse shadow-md'; // 8. Thu phí gọi khách
+    if(status?.includes('5.')) return 'bg-cyan-50 text-cyan-700 font-bold'; 
+    if(status?.includes('6.')) return 'bg-purple-50 text-purple-700'; 
+    if(status?.includes('7.')) return 'bg-pink-50 text-pink-700'; 
+    if(status?.includes('8.')) return 'bg-green-600 text-white font-bold animate-pulse shadow-md'; 
     return 'bg-white';
   };
 
-  // Hàm tự động cắt số thứ tự ở đầu trạng thái (VD: "1. Soạn thảo" -> "Soạn thảo")
+  // Hàm lột bỏ số thứ tự ở đầu câu cho khách xem Tivi
   const formatStatusForTV = (status: string) => {
     if (!status) return '';
-    // Regex này sẽ tìm số, dấu chấm và khoảng trắng ở đầu câu để cắt bỏ
     return status.replace(/^\d+\.\s*/, '');
   };
 
@@ -198,7 +181,6 @@ export default function TVDisplayPage() {
                       </div>
                     </td>
 
-                    {/* ĐÃ CHỈNH SỬA: Dùng hàm formatStatusForTV để ẩn số */}
                     <td className="px-6 py-5 align-top">
                       <div className={`rounded-lg px-4 py-3 text-center font-bold shadow-sm border ${getStatusColor(doc.status)} uppercase tracking-wide`}>
                           {formatStatusForTV(doc.status)}
@@ -220,7 +202,7 @@ export default function TVDisplayPage() {
           </div>
         </div>
         
-        {/* ĐÃ CHỈNH SỬA FOOTER: Không dùng "số 7" nữa mà ghi rõ tên trạng thái */}
+        {/* FOOTER */}
         <div className="mt-4 flex justify-between items-center text-gray-500 text-xs font-medium px-2">
             <div>© Văn Phòng Công Chứng Đức Hòa - Hệ thống theo dõi hồ sơ tự động</div>
             <div>Vui lòng liên hệ quầy thu phí nếu hồ sơ của quý khách đã ở trạng thái <span className="font-bold text-gray-700 uppercase">Thu phí và trả hồ sơ</span></div>
