@@ -24,13 +24,13 @@ export default function TVDisplayPage() {
     return () => clearInterval(timer);
   }, []);
 
-  // 2. GIẢI PHÁP CHỐNG ĐỨNG HÌNH: Ép Tivi tự F5 tải lại toàn bộ web sau mỗi 5 phút
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      window.location.reload();
-    }, 300000); // 300.000 ms = 5 phút
-    return () => clearTimeout(timer);
-  }, []);
+  // // 2. GIẢI PHÁP CHỐNG ĐỨNG HÌNH: Ép Tivi tự F5 tải lại toàn bộ web sau mỗi 5 phút
+  // useEffect(() => {
+  //   const timer = setTimeout(() => {
+  //     window.location.reload();
+  //   }, 300000); // 300.000 ms = 5 phút
+  //   return () => clearTimeout(timer);
+  // }, []);
 
   // 3. GỌI SWR (Chỉ gọi DUY NHẤT 1 lần với đầy đủ thông số tối ưu cho Tivi)
   const { data: responseData } = useSWR('/api/admin/documents', fetcher, {

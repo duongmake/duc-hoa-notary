@@ -29,22 +29,32 @@ export default function AdminPage() {
   const [message, setMessage] = useState({ type: '', text: '' });
   const [editingId, setEditingId] = useState<any>(null); 
   const [isFormOpen, setIsFormOpen] = useState(false);
+  
+  // ĐÃ THÊM: State để lưu từ khóa tìm kiếm
+  const [searchTerm, setSearchTerm] = useState('');
 
   const { data: responseData, mutate } = useSWR('/api/admin/documents', fetcher, {
     refreshInterval: 2000, 
     revalidateOnFocus: true,
   });
   
-  // ĐÃ CHỈNH SỬA LẠI LOGIC XUẤT DỮ LIỆU Ở ĐÂY
   const rawDocuments = responseData?.data || [];
   
-  // 1. Lọc ra những hồ sơ chưa hoàn thành
-  const activeDocs = rawDocuments.filter((doc: any) => !doc.status?.includes('9.'));
+  // ĐÃ THÊM: Bộ lọc tìm kiếm thông minh (Tìm theo Khách A, Khách B, Mã HS, Loại HS)
+  const searchedDocs = rawDocuments.filter((doc: any) => {
+    if (!searchTerm) return true; // Nếu không gõ gì thì hiện tất cả
+    const term = searchTerm.toLowerCase();
+    const customerA = (doc.customer_a || '').toLowerCase();
+    const customerB = (doc.customer_b || '').toLowerCase();
+    const code = (doc.code || '').toLowerCase();
+    const docName = (doc.document_name || '').toLowerCase();
+    
+    return customerA.includes(term) || customerB.includes(term) || code.includes(term) || docName.includes(term);
+  });
   
-  // 2. Lọc ra những hồ sơ ĐÃ hoàn thành
-  const completedDocs = rawDocuments.filter((doc: any) => doc.status?.includes('9.'));
-  
-  // 3. Ghép nối lại: Hồ sơ chưa xong nằm trên, hồ sơ đã xong nằm dưới cùng
+  // Áp dụng thuật toán sắp xếp: Đang xử lý nằm trên, Đã hoàn thành nằm dưới
+  const activeDocs = searchedDocs.filter((doc: any) => !doc.status?.includes('9.'));
+  const completedDocs = searchedDocs.filter((doc: any) => doc.status?.includes('9.'));
   const documents = [...activeDocs, ...completedDocs];
 
   const handleChange = (e: any) => setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -155,19 +165,47 @@ export default function AdminPage() {
     <div className="min-h-screen bg-gray-100 p-4 md:p-6 font-sans">
       <div className="max-w-7xl mx-auto space-y-6">
         
-        {/* HEADER */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-gray-300 pb-4 gap-4">
-          <h1 className="text-2xl font-bold text-gray-800">Quản Lý Tiến Độ Hồ Sơ Công Chứng</h1>
+        {/* HEADER VÀ THANH TÌM KIẾM */}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center border-b border-gray-300 pb-4 gap-4">
+          <h1 className="text-2xl font-bold text-gray-800 shrink-0">Quản Lý Tiến Độ Hồ Sơ</h1>
           
-          <div className="flex items-center gap-3">
-            <span className="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1.5 rounded flex items-center gap-2 shadow-sm">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+            
+            {/* ĐÃ THÊM: THANH TÌM KIẾM (SEARCH BAR) */}
+            <div className="relative w-full sm:w-64 md:w-72">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                placeholder="Tìm khách hàng, mã HS..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-3 py-1.5 border border-gray-300 rounded-md text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm"
+              />
+              {/* Nút xóa nhanh từ khóa */}
+              {searchTerm && (
+                <button 
+                  onClick={() => setSearchTerm('')}
+                  className="absolute inset-y-0 right-0 pr-2 flex items-center text-gray-400 hover:text-red-500"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+
+            <span className="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1.5 rounded flex items-center justify-center gap-2 shadow-sm shrink-0">
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Đồng bộ Real-time
             </span>
             
             {!isFormOpen && (
               <button 
                 onClick={handleOpenCreateForm}
-                className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-1.5 rounded-md shadow-sm transition-all flex items-center gap-2"
+                className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-1.5 rounded-md shadow-sm transition-all flex items-center justify-center gap-2 shrink-0"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -304,6 +342,8 @@ export default function AdminPage() {
               <tbody className="divide-y divide-gray-100">
                 {!responseData ? (
                   <tr><td colSpan={6} className="text-center py-8">Đang đồng bộ...</td></tr>
+                ) : documents.length === 0 ? (
+                  <tr><td colSpan={6} className="text-center py-8 text-gray-500 font-medium">Không tìm thấy hồ sơ nào phù hợp.</td></tr>
                 ) : documents.map((doc: any) => (
                   <tr key={doc.id} className={`hover:bg-blue-50/50 transition ${doc.status?.includes('9.') ? 'opacity-60 bg-gray-50' : ''}`}>
                     <td className="px-4 py-4 font-black text-gray-800">{doc.code}</td>
