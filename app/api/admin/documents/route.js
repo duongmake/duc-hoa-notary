@@ -4,18 +4,22 @@ import { NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  try {
-    const { rows } = await sql`SELECT * FROM documents ORDER BY updated_at DESC`;
-    return NextResponse.json({ success: true, data: rows }, {
+  // ... Đoạn code lấy dữ liệu từ Database của bạn ...
+  const documents = await getDocumentsFromDb(); 
+
+  // Trả về dữ liệu kèm theo Header cấm Caching tuyệt đối
+  return NextResponse.json(
+    { data: documents },
+    {
       status: 200,
       headers: {
-        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
         'Pragma': 'no-cache',
-      },
-    });
-  } catch (error) {
-    return NextResponse.json({ success: false, error: "Không thể tải danh sách." }, { status: 500 });
-  }
+        'Expires': '0',
+        'Surrogate-Control': 'no-store'
+      }
+    }
+  );
 }
 
 export async function POST(request) {
