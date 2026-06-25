@@ -59,7 +59,7 @@ export async function GET(request: Request) {
     const mailOptions = {
       from: '"Hệ Thống VPCC Đức Hòa" <duongmake3@gmail.com>',
       to: 'vpccdh@gmail.com', // Thay bằng email bạn muốn nhận báo cáo
-      subject: `📊 Báo Cáo Doanh Thu & Tiến Độ Hồ Sơ Cuối Ngày - ${today}`,
+      subject: `📊 Báo Cáo Tiến Độ Hồ Sơ Cuối Ngày - ${today}`,
       text: `Xin chào,\n\nHệ thống tự động xuất và gửi báo cáo tổng hợp hồ sơ của văn phòng ngày ${today}.\n\nChi tiết vui lòng xem trong file Excel đính kèm.\n\nTrân trọng,\nHệ thống tự động VPCC.`,
       attachments: [
         {
