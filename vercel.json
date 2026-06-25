@@ -1,12 +1,3 @@
-// {
-//   "crons": [
-//     {
-//       "path": "/api/cron/daily-report",
-//       "schedule": "59 23 * * *"
-//     }
-//   ]
-// }
-
 {
   "crons": [
     {
