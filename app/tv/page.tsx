@@ -95,6 +95,14 @@ export default function TVDisplayPage() {
     return status.replace(/^\d+\.\s*/, '');
   };
 
+  // Hàm tự động trích xuất Tên từ Họ và Tên đầy đủ
+  const getFirstName = (fullName: string) => {
+    if (!fullName || fullName === '-') return '-';
+    const nameParts = fullName.trim().split(' ');
+    // Lấy phần tử cuối cùng trong mảng (tên chính)
+    return nameParts[nameParts.length - 1];
+  };
+
   return (
     <div className="min-h-screen bg-white text-gray-900 font-sans flex flex-col h-screen overflow-hidden">
       {/* HEADER TIVI */}
@@ -153,18 +161,20 @@ export default function TVDisplayPage() {
                     </td>
                     
                     <td className="px-6 py-5 space-y-1.5 align-top">
-                      <div className="font-bold text-gray-800 text-base">
-                          {doc.document_name || 'Hồ sơ công chứng'}
-                      </div>
-                      <div className="flex items-start text-sm">
-                        <span className="font-bold text-gray-400 w-6 shrink-0">A:</span> 
-                        <span className="font-semibold text-gray-900">{doc.customer_a || '-'}</span>
-                      </div>
-                      <div className="flex items-start text-sm">
-                        <span className="font-bold text-gray-400 w-6 shrink-0">B:</span> 
-                        <span className="font-semibold text-gray-900">{doc.customer_b || '-'}</span>
-                      </div>
-                    </td>
+    <div className="font-bold text-gray-800 text-base">
+        {doc.document_name || 'Hồ sơ công chứng'}
+    </div>
+    <div className="flex items-start text-sm">
+      <span className="font-bold text-gray-400 w-6 shrink-0">A:</span> 
+      {/* ĐÃ SỬA: Bọc tên qua hàm getFirstName */}
+      <span className="font-semibold text-gray-900 truncate">Khách hàng {getFirstName(doc.customer_a)}</span>
+    </div>
+    <div className="flex items-start text-sm">
+      <span className="font-bold text-gray-400 w-6 shrink-0">B:</span> 
+      {/* ĐÃ SỬA: Bọc tên qua hàm getFirstName */}
+      <span className="font-semibold text-gray-900 truncate">Khách hàng {getFirstName(doc.customer_b)}</span>
+    </div>
+  </td>
 
                     <td className="px-6 py-5 space-y-2 align-top">
                       <div className="flex items-center text-sm">
