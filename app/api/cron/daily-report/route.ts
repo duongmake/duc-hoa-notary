@@ -8,7 +8,6 @@ import { sql } from '@vercel/postgres';
 export async function GET(request: Request) {
   try {
     // 2. KÉO DỮ LIỆU THỰC TẾ TỪ KHO
-    // Lệnh này sẽ lấy toàn bộ hồ sơ trong bảng documents và sắp xếp theo thời gian tạo mới nhất
     const result = await sql`SELECT * FROM documents ORDER BY created_at DESC`;
     const documents = result.rows;
 
@@ -45,7 +44,6 @@ export async function GET(request: Request) {
     const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
 
     // 4. CẤU HÌNH TÀI KHOẢN GỬI MAIL 
-    // Hãy thay thế email và Mật khẩu ứng dụng (App Password) của bạn vào đây
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
@@ -58,7 +56,7 @@ export async function GET(request: Request) {
     const today = new Date().toLocaleDateString('vi-VN');
     const mailOptions = {
       from: '"Hệ Thống VPCC Đức Hòa" <duongmake3@gmail.com>',
-      to: 'vpccdh@gmail.com', // Thay bằng email bạn muốn nhận báo cáo
+      to: 'vpccdh@gmail.com', 
       subject: `📊 Báo Cáo Tiến Độ Hồ Sơ Cuối Ngày - ${today}`,
       text: `Xin chào,\n\nHệ thống tự động xuất và gửi báo cáo tổng hợp hồ sơ của văn phòng ngày ${today}.\n\nChi tiết vui lòng xem trong file Excel đính kèm.\n\nTrân trọng,\nHệ thống tự động VPCC.`,
       attachments: [
@@ -69,9 +67,13 @@ export async function GET(request: Request) {
       ]
     };
 
+    // Chờ gửi mail xong hoàn tất
     await transporter.sendMail(mailOptions);
 
-    return NextResponse.json({ success: true, message: 'Đã xuất Database ra Excel và gửi email thành công!' });
+    // 6. ĐÃ THÊM: XÓA TOÀN BỘ DỮ LIỆU SAU KHI GỬI MAIL THÀNH CÔNG
+    await sql`DELETE FROM documents`;
+
+    return NextResponse.json({ success: true, message: 'Đã gửi email và DỌN SẠCH database thành công!' });
 
   } catch (error) {
     console.error('Lỗi hệ thống gửi mail:', error);
